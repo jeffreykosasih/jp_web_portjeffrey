@@ -348,7 +348,7 @@ export default function ProfilePage({
                   and build what I design in React.
                 </p>
                 <p style={{ marginBottom: '20px' }}>
-                  I studied IT in Surabaya and Melbourne, built Readdy (a
+                  I studied IT in Surabaya and Melbourne, helped build Readdy (a
                   reading app for people with dyslexia) at the Apple Developer
                   Academy, and worked as a Product Owner at Bank Central Asia.
                 </p>
