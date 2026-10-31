@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
   faEnvelope,
-  faFileLines,
 } from '@fortawesome/free-solid-svg-icons';
 import { faLinkedin, faGithub } from '@fortawesome/free-brands-svg-icons';
 import emailjs from '@emailjs/browser';
@@ -265,7 +264,7 @@ export default function ConnectPage({
     }
   };
 
-  // Recruiter order: email and résumé first. Each shows the real address.
+  // Email first. Each row shows the real address.
   const contactMethods = [
     {
       title: 'Email',
@@ -276,13 +275,6 @@ export default function ConnectPage({
       hoverColor: '#EA4335', // Gmail red
       link: `mailto:${PROFILE.email}`,
       canCopy: true,
-    },
-    {
-      title: 'Résumé',
-      icon: <FontAwesomeIcon icon={faFileLines} style={{ color: '#ffffff' }} />,
-      description: 'PDF, opens in a new tab',
-      hoverColor: '#0B60B0',
-      link: LINKS.resume,
     },
     {
       title: 'LinkedIn',

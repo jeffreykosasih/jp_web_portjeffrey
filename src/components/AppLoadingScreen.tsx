@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DeviceInfo } from '../lib/types';
-import { LINKS, PROFILE } from '../lib/profile';
+import { PROFILE } from '../lib/profile';
 
 interface AppLoadingScreenProps {
   onLoadingComplete: () => void;
@@ -229,15 +229,6 @@ export default function AppLoadingScreen({
           : isMobile
           ? 'var(--text-base)'
           : 'var(--text-lg)',
-      },
-      quickLink: {
-        fontFamily: "'Lato', sans-serif",
-        color: colors.text,
-        opacity: 0.85,
-        textDecoration: 'underline',
-        textUnderlineOffset: '0.2em',
-        fontSize: isLandscapeMobile || isMobile ? 'var(--text-sm)' : 'var(--text-base)',
-        padding: 'var(--space-xs) var(--space-sm)',
       },
     };
   }, [colors.text, deviceInfo]);
@@ -478,14 +469,6 @@ export default function AppLoadingScreen({
                   >
                     Let's explore
                   </button>
-                  <a
-                    href={LINKS.github}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    style={introStyles.quickLink}
-                  >
-                    Short on time? See my code on GitHub ↗
-                  </a>
                 </motion.div>
               )}
             </AnimatePresence>

@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { DeviceInfo } from '../lib/types';
 import { ResponsiveValues } from '../lib/responsiveUtils';
-import { LINKS } from '../lib/profile';
 
 interface PortfolioPageProps {
   isVisible: boolean;
@@ -41,7 +40,6 @@ const projects: Project[] = [
     links: [
       { label: 'Live site', href: 'https://katsuseiba.vercel.app' },
       { label: 'Case study', href: 'https://www.jeffreyko.com/pj/katsu-seiba' },
-      { label: 'Code', href: 'https://github.com/jeffreykosasih/katsuseiba' },
     ],
   },
   {
@@ -53,7 +51,6 @@ const projects: Project[] = [
     tech: ['Three.js', 'React', 'TypeScript', 'Motion'],
     links: [
       { label: 'Case study', href: 'https://www.jeffreyko.com/pj/port-jeffrey' },
-      { label: 'Code', href: LINKS.siteCode },
     ],
   },
   {
@@ -65,7 +62,6 @@ const projects: Project[] = [
     tech: ['Next.js', 'TypeScript', 'Tailwind', 'Motion'],
     links: [
       { label: 'Live site', href: 'https://musclememo.vercel.app' },
-      { label: 'Code', href: 'https://github.com/jeffreykosasih/musclememory' },
     ],
   },
 ];
@@ -572,41 +568,6 @@ export default function PortfolioPage({
               ))}
             </motion.div>
 
-            {/* Footer */}
-            <motion.p
-              initial={
-                shouldAnimateText ? { opacity: 0, y: 20 } : { opacity: 1, y: 0 }
-              }
-              animate={{ opacity: 1, y: 0 }}
-              transition={
-                shouldAnimateText
-                  ? { duration: 0.6, delay: 0.8 }
-                  : { duration: 0 }
-              }
-              style={{
-                margin: 0,
-                fontSize: isPhone ? 'var(--text-sm)' : 'calc(var(--text-sm) + 0.05rem)',
-                fontFamily: 'Lato, sans-serif',
-                fontWeight: 400,
-                color: 'rgba(255, 255, 255, 0.8)',
-                textAlign: 'center',
-                lineHeight: '1.3',
-              }}
-            >
-              More projects and code on{' '}
-              <a
-                href={LINKS.github}
-                target='_blank'
-                rel='noopener noreferrer'
-                style={{
-                  color: '#ffffff',
-                  fontWeight: 700,
-                  textUnderlineOffset: '0.2em',
-                }}
-              >
-                GitHub ↗
-              </a>
-            </motion.p>
           </motion.div>
         </motion.div>
       )}
