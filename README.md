@@ -1,6 +1,6 @@
 # Port Jeffrey
 
-A 3D island portfolio by Jeffrey Ko, a UX/UI designer who codes. Every landmark on the island is labelled, so visitors can find the work without guessing.
+A 3D island portfolio by Jeffrey Ko, a web developer and designer. Every landmark on the island is labelled, so visitors can find the work without guessing.
 
 **Live:** [portjeffrey.vercel.app](https://portjeffrey.vercel.app) · **Case study:** [jeffreyko.com/pj/port-jeffrey](https://www.jeffreyko.com/pj/port-jeffrey)
 

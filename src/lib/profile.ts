@@ -3,12 +3,11 @@
 
 export const PROFILE = {
   name: 'Jeffrey Ko',
-  role: 'UX/UI designer who codes',
+  role: 'Web developer & designer',
   email: 'jefpkos@gmail.com',
 } as const;
 
 export const LINKS = {
-  caseStudies: 'https://www.jeffreyko.com',
   resume: 'https://www.jeffreyko.com/Jeffrey-Ko-Developer-Resume.pdf',
   linkedin: 'https://www.linkedin.com/in/jeffreykosasih/',
   github: 'https://github.com/jeffreykosasih',

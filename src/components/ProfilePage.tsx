@@ -344,8 +344,9 @@ export default function ProfilePage({
               >
                 <h1 style={getTitleStyles()}>About Me 👋</h1>
                 <p style={{ marginBottom: '20px' }}>
-                  Hi, I’m Jeffrey, a UX/UI designer who codes. I design in Figma
-                  and build what I design in React.
+                  Hi, I’m Jeffrey, a web developer and designer. I build
+                  websites and web apps in React and TypeScript, and I design
+                  them in Figma first.
                 </p>
                 <p style={{ marginBottom: '20px' }}>
                   I studied IT in Surabaya and Melbourne, helped build Readdy (a

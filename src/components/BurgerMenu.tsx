@@ -439,7 +439,7 @@ export default function BurgerMenu({
   ];
 
   const outboundLinks = [
-    { key: 'case-studies', label: 'Case studies ↗', href: LINKS.caseStudies },
+    { key: 'github', label: 'GitHub ↗', href: LINKS.github },
     { key: 'resume', label: 'Résumé (PDF) ↗', href: LINKS.resume },
   ];
 

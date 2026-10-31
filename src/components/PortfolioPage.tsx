@@ -593,9 +593,9 @@ export default function PortfolioPage({
                 lineHeight: '1.3',
               }}
             >
-              More case studies at{' '}
+              More projects and code on{' '}
               <a
-                href={LINKS.caseStudies}
+                href={LINKS.github}
                 target='_blank'
                 rel='noopener noreferrer'
                 style={{
@@ -604,7 +604,7 @@ export default function PortfolioPage({
                   textUnderlineOffset: '0.2em',
                 }}
               >
-                jeffreyko.com ↗
+                GitHub ↗
               </a>
             </motion.p>
           </motion.div>

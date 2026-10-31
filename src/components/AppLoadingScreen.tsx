@@ -479,12 +479,12 @@ export default function AppLoadingScreen({
                     Let's explore
                   </button>
                   <a
-                    href={LINKS.caseStudies}
+                    href={LINKS.github}
                     target='_blank'
                     rel='noopener noreferrer'
                     style={introStyles.quickLink}
                   >
-                    Short on time? Read my case studies at jeffreyko.com ↗
+                    Short on time? See my code on GitHub ↗
                   </a>
                 </motion.div>
               )}

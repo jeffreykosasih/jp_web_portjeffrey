@@ -293,8 +293,8 @@ export default function LongStoryPage({
                 School in Melbourne.
               </p>
               <p style={{ marginBottom: 'var(--space-lg)' }}>
-                I’m looking for UX/UI and web design roles, so if you’re
-                hiring, let’s talk!
+                I’m looking for web developer and web design roles, so if
+                you’re hiring, let’s talk!
               </p>
             </motion.div>
           </motion.div>
