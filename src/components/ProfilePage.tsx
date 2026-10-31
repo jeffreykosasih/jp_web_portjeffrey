@@ -5,6 +5,7 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import ProfileCard from './ProfileCard';
 import LongStoryPage from './LongStoryPage';
 import { DeviceInfo } from '../lib/types';
+import { PROFILE } from '../lib/profile';
 import {
   getResponsiveValue,
   getSpacing,
@@ -78,7 +79,9 @@ export default function ProfilePage({
       zIndex: ResponsiveValues.zIndex.overlay,
       display: 'flex',
       flexDirection: 'column' as const,
-      justifyContent: 'center',
+      // Content centres itself with auto margins so tall content scrolls
+      // instead of being cut off at the top
+      justifyContent: 'flex-start',
       alignItems: 'center',
       color: '#ffffff',
       padding: `max(env(safe-area-inset-top), ${padding}) ${padding} max(env(safe-area-inset-bottom), ${padding}) ${padding}`,
@@ -119,6 +122,8 @@ export default function ProfilePage({
       width: '100%',
       display: 'flex',
       justifyContent: 'center',
+      marginTop: 'auto',
+      marginBottom: 'auto',
       ...styles[deviceType],
     };
   };
@@ -293,6 +298,7 @@ export default function ProfilePage({
                 onClose();
                 onOpenBurgerMenu('right');
               }}
+              aria-label='Back to menu'
               initial={{ x: 20 }}
               animate={{ x: 0 }}
               whileHover={{ x: -5 }}
@@ -338,13 +344,13 @@ export default function ProfilePage({
               >
                 <h1 style={getTitleStyles()}>About Me 👋</h1>
                 <p style={{ marginBottom: '20px' }}>
-                  Hi, I’m Jeffrey. I build websites that look fascinating with a
-                  mixture of creativity and impact.
+                  Hi, I’m Jeffrey, a UX/UI designer who codes. I design in Figma
+                  and build what I design in React.
                 </p>
                 <p style={{ marginBottom: '20px' }}>
-                  I focus on front-end development but am steadily growing into
-                  full-stack work. I'm self-taught, driven by curiosity, and
-                  always up for a challenge.
+                  I studied IT in Surabaya and Melbourne, built Readdy (a
+                  reading app for people with dyslexia) at the Apple Developer
+                  Academy, and worked as a Product Owner at Bank Central Asia.
                 </p>
                 <p style={{ marginBottom: '15px' }}>
                   Let’s build something cool.
@@ -391,6 +397,8 @@ export default function ProfilePage({
               >
                 <ProfileCard
                   isDarkMode={isDarkMode}
+                  name={PROFILE.name}
+                  title={PROFILE.role}
                   contactText='Contact Me'
                   onNavigate={onNavigate}
                 />

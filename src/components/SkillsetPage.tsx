@@ -24,7 +24,7 @@ import {
   SiThreedotjs,
   SiTypescript,
   SiNotion,
-  SiGooglekeep,
+  SiVercel,
   SiAdobephotoshop,
   SiAdobeillustrator,
   SiAdobepremierepro,
@@ -68,16 +68,15 @@ const skillsData: Record<SkillCategory, SkillItem[]> = {
     },
     {
       name: 'GitHub',
-      description: 'Details on all projects',
+      description: 'Code for all my projects',
       icon: faGithubBrand,
       color: '#333333',
     },
     {
-      name: 'Google Keep',
-      description: 'Minimalist to-do list',
-      icon: SiGooglekeep,
-      color: '#FBBC05',
-      textColor: '#333333',
+      name: 'Vercel',
+      description: 'Hosting and deploys for my sites',
+      icon: SiVercel,
+      color: '#000000',
     },
     {
       name: 'Notion',
@@ -136,7 +135,7 @@ const skillsData: Record<SkillCategory, SkillItem[]> = {
     },
     {
       name: 'Indonesian',
-      description: 'I was born here',
+      description: 'Native speaker',
       icon: '🇮🇩',
       color: '#FF0000',
     },
@@ -237,7 +236,9 @@ export default function SkillsetPage({
       zIndex: ResponsiveValues.zIndex.overlay,
       display: 'flex',
       flexDirection: 'column' as const,
-      justifyContent: 'center',
+      // The content block grows to fill the panel, so start at the top and
+      // let tall content scroll instead of being cut off
+      justifyContent: 'flex-start',
       alignItems: 'center',
       color: '#ffffff',
       overflowY: 'auto' as const,
@@ -706,7 +707,9 @@ export default function SkillsetPage({
         ))}
 
         {showMoreButton && (
-          <motion.div
+          <motion.button
+            type='button'
+            aria-haspopup='dialog'
             initial={{ opacity: 0, y: 10, scale: 1 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{
@@ -734,6 +737,8 @@ export default function SkillsetPage({
               maxWidth: deviceInfo?.isMobile ? '160px' : '180px',
               minHeight: deviceInfo?.isMobile ? '140px' : '160px',
               border: '2px dashed rgba(255, 255, 255, 0.3)',
+              fontFamily: 'inherit',
+              color: '#ffffff',
             }}
           >
             <div
@@ -760,7 +765,7 @@ export default function SkillsetPage({
             >
               More tools
             </p>
-          </motion.div>
+          </motion.button>
         )}
       </motion.div>
     );
@@ -814,6 +819,7 @@ export default function SkillsetPage({
               {/* Close button */}
               <motion.button
                 onClick={() => setShowAdobePopup(false)}
+                aria-label='Close other tools'
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 style={{
@@ -946,7 +952,7 @@ export default function SkillsetPage({
                   lineHeight: '1.4',
                 }}
               >
-                Not related but there's that
+                Not core to my work, but I can use them.
               </p>
             </motion.div>
           </motion.div>
@@ -972,6 +978,7 @@ export default function SkillsetPage({
               onClose(); // Close current page
               onOpenBurgerMenu('right'); // Open burger menu sliding from right corner
             }}
+            aria-label='Back to menu'
             initial={{ x: 20 }}
             animate={{ x: 0 }}
             whileHover={{ x: -5 }}
@@ -1088,6 +1095,7 @@ export default function SkillsetPage({
                 <motion.button
                   key={category}
                   onClick={() => setActiveCategory(category)}
+                  aria-pressed={activeCategory === category}
                   style={getCategoryButtonStyles(category)}
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
@@ -1115,8 +1123,8 @@ export default function SkillsetPage({
             {activeCategory === 'tools'
               ? 'Tools that I use for task management, design, and development.'
               : activeCategory === 'programming'
-              ? 'Specific things that I learn, not to be limited what I listed here. '
-              : 'Shout out to Mr. Vance my private tutor. He is the reason I enjoy learning English so much.'}
+              ? 'What I’ve learned so far. Not the full list.'
+              : 'Shout-out to Mr. Vance, my private tutor. He’s the reason I enjoy learning English so much.'}
           </motion.div>
 
           {/* Adobe Popup */}

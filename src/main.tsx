@@ -19,6 +19,7 @@ import ClickSpark from './components/ClickSpark';
 import OceanAudio from './components/OceanAudio';
 import useDeviceDetection from './hooks/useDeviceDetection';
 import { useClickSound } from './hooks/useClickSound';
+import { PROFILE } from './lib/profile';
 
 // Type definitions
 type PageName = 'home' | 'profile' | 'skillset' | 'portfolio' | 'connect';
@@ -31,14 +32,15 @@ const MemoizedCreditsButton = React.memo(CreditsButton);
 const MemoizedCreditsPopup = React.memo(CreditsPopup);
 const MemoizedSoundToggle = React.memo(SoundToggle);
 
-// Remembers whether a visitor turned the wave sound off.
+// Remembers whether a visitor turned the wave sound on. The sound starts off,
+// so nobody opening the site at work gets surprised by ocean noise.
 const WAVE_SOUND_KEY = 'portjeffrey-wave-sound';
 
 const getInitialWaveSound = (): boolean => {
   try {
-    return localStorage.getItem(WAVE_SOUND_KEY) !== 'off';
+    return localStorage.getItem(WAVE_SOUND_KEY) === 'on';
   } catch {
-    return true;
+    return false;
   }
 };
 
@@ -180,7 +182,7 @@ function App(): React.JSX.Element {
     return baseStyles;
   }, [isDarkMode, deviceInfo.isMobile]);
 
-  const jefriTextStyles = React.useMemo(() => {
+  const nameTextStyles = React.useMemo(() => {
     const baseStyles = {
       position: 'fixed' as const,
       fontFamily: 'Lato, sans-serif',
@@ -312,14 +314,14 @@ function App(): React.JSX.Element {
                   : 'linear-gradient(to bottom, #005E80 0%, #005E80 100%)',
               }}
             >
-              {/* Jefri text in top left corner */}
+              {/* Name in top left corner */}
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.5 }}
-                style={jefriTextStyles}
+                style={nameTextStyles}
               >
-                Jefri
+                {PROFILE.name}
               </motion.div>
 
               <MemoizedLazyScene

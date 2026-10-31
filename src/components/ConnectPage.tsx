@@ -1,10 +1,15 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faEnvelope } from '@fortawesome/free-solid-svg-icons';
+import {
+  faArrowLeft,
+  faEnvelope,
+  faFileLines,
+} from '@fortawesome/free-solid-svg-icons';
 import { faLinkedin, faGithub } from '@fortawesome/free-brands-svg-icons';
 import emailjs from '@emailjs/browser';
 import { DeviceInfo } from '../lib/types';
+import { LINKS, PROFILE } from '../lib/profile';
 import {
   getResponsiveValue,
   getSpacing,
@@ -70,6 +75,26 @@ export default function ConnectPage({
   const [hoveredCardIndex, setHoveredCardIndex] = React.useState<number | null>(
     null
   );
+  const [emailCopied, setEmailCopied] = React.useState(false);
+
+  // Many people use webmail, where mailto links do nothing, so offer a copy
+  const copyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(PROFILE.email);
+    } catch {
+      const field = document.createElement('textarea');
+      field.value = PROFILE.email;
+      field.setAttribute('readonly', '');
+      field.style.position = 'fixed';
+      field.style.opacity = '0';
+      document.body.appendChild(field);
+      field.select();
+      document.execCommand('copy');
+      document.body.removeChild(field);
+    }
+    setEmailCopied(true);
+    window.setTimeout(() => setEmailCopied(false), 2000);
+  };
   const [showSuccessPopup, setShowSuccessPopup] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitStatus, setSubmitStatus] = React.useState<
@@ -123,7 +148,8 @@ export default function ConnectPage({
       zIndex: ResponsiveValues.zIndex.overlay,
       display: 'flex',
       flexDirection: 'column' as const,
-      justifyContent: 'center',
+      // Content centres itself with auto margins so it scrolls when tall
+      justifyContent: 'flex-start',
       alignItems: 'center',
       color: '#ffffff',
       overflowY: 'auto' as const,
@@ -239,29 +265,38 @@ export default function ConnectPage({
     }
   };
 
+  // Recruiter order: email and résumé first. Each shows the real address.
   const contactMethods = [
     {
-      title: 'Gmail',
+      title: 'Email',
       icon: (
         <GmailIcon style={{ color: '#ffffff', fontSize: 'var(--text-2xl)' }} />
       ), // Using CSS custom property
-      description: 'jeffreyko1998@gmail.com',
+      description: PROFILE.email,
       hoverColor: '#EA4335', // Gmail red
-      link: 'mailto:jeffreyko1998@gmail.com',
+      link: `mailto:${PROFILE.email}`,
+      canCopy: true,
+    },
+    {
+      title: 'Résumé',
+      icon: <FontAwesomeIcon icon={faFileLines} style={{ color: '#ffffff' }} />,
+      description: 'PDF, opens in a new tab',
+      hoverColor: '#0B60B0',
+      link: LINKS.resume,
     },
     {
       title: 'LinkedIn',
       icon: <FontAwesomeIcon icon={faLinkedin} style={{ color: '#ffffff' }} />,
-      description: 'Professional Networking',
+      description: 'linkedin.com/in/jeffreykosasih',
       hoverColor: '#0077B5', // LinkedIn blue
-      link: 'https://linkedin.com/in/jeffreykosasih',
+      link: LINKS.linkedin,
     },
     {
       title: 'GitHub',
       icon: <FontAwesomeIcon icon={faGithub} style={{ color: '#ffffff' }} />,
-      description: 'List of projects',
+      description: 'github.com/jeffreykosasih',
       hoverColor: '#333333', // GitHub dark
-      link: 'https://github.com/jeffreykosasih',
+      link: LINKS.github,
     },
   ];
 
@@ -283,6 +318,7 @@ export default function ConnectPage({
                 onClose();
                 onOpenBurgerMenu('right'); // Open burger menu sliding from right corner
               }}
+              aria-label='Back to menu'
               initial={{ x: 20 }}
               animate={{ x: 0 }}
               whileHover={{ x: -5 }}
@@ -347,6 +383,13 @@ export default function ConnectPage({
                 maxWidth: '1000px',
                 width: '100%',
                 textAlign: 'center',
+                marginTop: 'auto',
+                marginBottom: 'auto',
+                paddingTop:
+                  deviceType === 'mobile-landscape' ||
+                  deviceType === 'mobile-portrait'
+                    ? 'var(--space-4xl)' // clear the back button
+                    : 0,
               }}
             >
               <h1
@@ -417,8 +460,8 @@ export default function ConnectPage({
                   color: 'rgba(255, 255, 255, 0.9)',
                 }}
               >
-                I'm very excited to collaborate or connect with fellow
-                developers and creators.
+                Hiring, or want to build something together? Email is the
+                quickest way to reach me.
               </p>
 
               {/* Two Column Layout */}
@@ -515,16 +558,16 @@ export default function ConnectPage({
                     }}
                   >
                     {contactMethods.map((method, index) => (
-                      <motion.button
-                        key={method.title}
-                        onClick={() => {
-                          if (method.link.startsWith('mailto:')) {
-                            window.location.href = method.link;
-                          } else {
-                            window.open(method.link, '_blank');
-                          }
-                        }}
+                      <div key={method.title} style={{ position: 'relative' }}>
+                      <motion.a
+                        href={method.link}
+                        {...(method.link.startsWith('mailto:')
+                          ? {}
+                          : { target: '_blank', rel: 'noopener noreferrer' })}
                         style={{
+                          color: '#ffffff',
+                          textDecoration: 'none',
+                          boxSizing: 'border-box',
                           background:
                             hoveredCardIndex === index
                               ? method.hoverColor
@@ -612,7 +655,7 @@ export default function ConnectPage({
                                   : deviceType === 'tablet'
                                   ? 'calc(var(--text-sm) + 0.05rem)'
                                   : 'calc(var(--text-sm) + 0.05rem)',
-                              color: 'rgba(255, 255, 255, 0.7)',
+                              color: 'rgba(255, 255, 255, 0.85)',
                               fontFamily: 'Lato, sans-serif',
                               margin: 0,
                             }}
@@ -620,7 +663,42 @@ export default function ConnectPage({
                             {method.description}
                           </p>
                         </div>
-                      </motion.button>
+                      </motion.a>
+                      {method.canCopy && (
+                        <button
+                          type='button'
+                          onClick={copyEmail}
+                          aria-label={emailCopied ? 'Email address copied' : 'Copy email address'}
+                          aria-live='polite'
+                          style={{
+                            position: 'absolute',
+                            top: '50%',
+                            right: 'var(--space-base)',
+                            transform: 'translateY(-50%)',
+                            minHeight: 'var(--touch-target-sm)',
+                            minWidth: 'var(--touch-target-sm)',
+                            padding: '0 var(--space-md)',
+                            borderRadius: 'var(--radius-full)',
+                            border: '1px solid rgba(255, 255, 255, 0.5)',
+                            backgroundColor: emailCopied
+                              ? '#ffffff'
+                              : 'rgba(0, 0, 0, 0.15)',
+                            color: emailCopied
+                              ? isDarkMode
+                                ? '#162542'
+                                : '#005E80'
+                              : '#ffffff',
+                            fontFamily: 'Lato, sans-serif',
+                            fontWeight: 700,
+                            fontSize: 'var(--text-sm)',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.15s ease, color 0.15s ease',
+                          }}
+                        >
+                          {emailCopied ? 'Copied' : 'Copy'}
+                        </button>
+                      )}
+                      </div>
                     ))}
                   </div>
                 </motion.div>
@@ -675,7 +753,7 @@ export default function ConnectPage({
                           : 'left',
                     }}
                   >
-                    Straight from site
+                    Send a message
                   </h2>
 
                   <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
@@ -693,6 +771,8 @@ export default function ConnectPage({
                       <input
                         type='text'
                         name='name'
+                        aria-label='Your name'
+                        autoComplete='name'
                         placeholder='Your Name'
                         value={formData.name}
                         onChange={handleInputChange}
@@ -758,6 +838,8 @@ export default function ConnectPage({
                       <input
                         type='email'
                         name='email'
+                        aria-label='Your email'
+                        autoComplete='email'
                         placeholder='Your Email'
                         value={formData.email}
                         onChange={handleInputChange}
@@ -822,6 +904,7 @@ export default function ConnectPage({
                     >
                       <textarea
                         name='message'
+                        aria-label='Your message'
                         placeholder='Your Message'
                         value={formData.message}
                         onChange={handleInputChange}

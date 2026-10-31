@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DeviceInfo } from '../lib/types';
+import { LINKS, PROFILE } from '../lib/profile';
 
 interface AppLoadingScreenProps {
   onLoadingComplete: () => void;
@@ -10,9 +11,11 @@ interface AppLoadingScreenProps {
   onPlayClickSound?: () => void;
 }
 
+// The button used to appear after 4.3s. Now it's about 1.7s, so a recruiter
+// skimming several portfolios sees who this is and can start straight away.
 const DOTS_DURATION = 800; // 0.8 seconds (faster loading)
-const TITLE_DELAY = 1500; // 1.5 seconds after dots fade out
-const BUTTON_DELAY = 2000; // 2 seconds after title appears
+const TITLE_DELAY = 300; // shortly after dots fade out
+const BUTTON_DELAY = 600; // shortly after title appears
 const TRANSITION_DURATION = 1200; // 1.2 seconds for fade out/in
 
 export default function AppLoadingScreen({
@@ -187,6 +190,58 @@ export default function AppLoadingScreen({
     }
   }, [isDarkMode, colors.text, deviceInfo]);
 
+  // Who this is and what the site is, right under the title
+  const introStyles = React.useMemo(() => {
+    const isLandscapeMobile = !!deviceInfo?.isLandscapeMobile;
+    const isMobile = !!deviceInfo?.isMobile;
+    const isTablet = !!deviceInfo?.isTablet;
+    return {
+      wrapper: {
+        display: 'flex',
+        flexDirection: 'column' as const,
+        alignItems: 'center',
+        gap: isLandscapeMobile ? '0.125rem' : 'var(--space-sm)',
+        textAlign: 'center' as const,
+        fontFamily: "'Lato', sans-serif",
+        color: colors.text,
+        maxWidth: '40rem',
+        padding: '0 var(--space-base)',
+      },
+      role: {
+        margin: 0,
+        fontWeight: 700,
+        lineHeight: 1.3,
+        fontSize: isLandscapeMobile
+          ? 'var(--text-base)'
+          : isMobile
+          ? 'var(--text-lg)'
+          : isTablet
+          ? 'var(--text-xl)'
+          : 'var(--text-2xl)',
+      },
+      line: {
+        margin: 0,
+        fontWeight: 400,
+        lineHeight: 1.4,
+        opacity: 0.85,
+        fontSize: isLandscapeMobile
+          ? 'var(--text-sm)'
+          : isMobile
+          ? 'var(--text-base)'
+          : 'var(--text-lg)',
+      },
+      quickLink: {
+        fontFamily: "'Lato', sans-serif",
+        color: colors.text,
+        opacity: 0.85,
+        textDecoration: 'underline',
+        textUnderlineOffset: '0.2em',
+        fontSize: isLandscapeMobile || isMobile ? 'var(--text-sm)' : 'var(--text-base)',
+        padding: 'var(--space-xs) var(--space-sm)',
+      },
+    };
+  }, [colors.text, deviceInfo]);
+
   const handleButtonMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'translateY(-0.125rem)'; // Converted to rem
     e.currentTarget.style.backgroundColor = isDarkMode ? '#f0f0a0' : '#f0f0f0'; // Lighter yellow/gray on hover
@@ -323,9 +378,9 @@ export default function AppLoadingScreen({
 
               {/* Title */}
               {showTitle && (
-                <motion.div
+                <motion.h1
                   key='title'
-                  style={titleStyles}
+                  style={{ ...titleStyles, margin: 0 }}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{
@@ -347,15 +402,33 @@ export default function AppLoadingScreen({
                     Welcome to
                   </div>
                   <div>Port Jeffrey</div>
-                </motion.div>
+                </motion.h1>
               )}
             </AnimatePresence>
           </div>
 
+          {/* Who this is, so nobody has to explore to find out */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={showTitle ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+            transition={{ duration: 0.6, delay: showTitle ? 0.25 : 0 }}
+            style={introStyles.wrapper}
+            aria-hidden={!showTitle}
+          >
+            <p style={introStyles.role}>
+              {PROFILE.name} — {PROFILE.role}
+            </p>
+            {!deviceInfo?.isLandscapeMobile && (
+              <p style={introStyles.line}>
+                A 3D portfolio I designed and built in React and{' '}Three.js.
+              </p>
+            )}
+          </motion.div>
+
           {/* Button Area */}
           <div
             style={{
-              height: deviceInfo?.isMobile
+              minHeight: deviceInfo?.isMobile
                 ? 'var(--space-4xl)'
                 : deviceInfo?.isLandscapeMobile
                 ? '2rem' // Much smaller button area for landscape mobile
@@ -363,6 +436,7 @@ export default function AppLoadingScreen({
                 ? 'var(--space-5xl)'
                 : 'var(--space-6xl)', // Responsive height based on device
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -385,6 +459,14 @@ export default function AppLoadingScreen({
                     damping: 30,
                     stiffness: 90,
                   }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: deviceInfo?.isLandscapeMobile
+                      ? 'var(--space-xs)'
+                      : 'var(--space-md)',
+                  }}
                 >
                   <button
                     onClick={handleExploreClick}
@@ -396,6 +478,14 @@ export default function AppLoadingScreen({
                   >
                     Let's explore
                   </button>
+                  <a
+                    href={LINKS.caseStudies}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    style={introStyles.quickLink}
+                  >
+                    Short on time? Read my case studies at jeffreyko.com ↗
+                  </a>
                 </motion.div>
               )}
             </AnimatePresence>

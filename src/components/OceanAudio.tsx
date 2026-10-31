@@ -140,7 +140,8 @@ export default function OceanAudio({
       ref={audioRef}
       src='/assets/audio/sound_ocean.mp3'
       loop
-      preload='auto'
+      // The sound starts off, so don't download ~900 KB of waves until asked
+      preload='none'
       style={{ display: 'none' }}
     />
   );

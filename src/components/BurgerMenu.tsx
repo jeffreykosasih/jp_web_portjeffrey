@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DeviceInfo } from '../lib/types';
 import { getResponsiveValue, ResponsiveValues } from '../lib/responsiveUtils';
+import { LINKS } from '../lib/profile';
 
 // Type definitions
 type PageName = 'home' | 'profile' | 'skillset' | 'portfolio' | 'connect';
@@ -112,6 +113,7 @@ export default function BurgerMenu({
   const [isHovered, setIsHovered] = useState(false);
   const [connectHovered, setConnectHovered] = useState(false);
   const [hoveredMenuItem, setHoveredMenuItem] = useState<PageName | null>(null);
+  const [hoveredOutbound, setHoveredOutbound] = useState<string | null>(null);
   const [wasOpenBehindPage, setWasOpenBehindPage] = useState(false);
 
   // Unified device type detection (following ProfilePage pattern)
@@ -408,12 +410,37 @@ export default function BurgerMenu({
     };
   };
 
+  // Smaller links that leave the island: the plain case-study site and the CV
+  const getOutboundLinkStyles = (key: string) => {
+    const configs = {
+      'mobile-landscape': { fontSize: 'var(--text-xs)', padding: '0.125rem 0' },
+      'mobile-portrait': { fontSize: 'var(--text-base)', padding: 'var(--space-xs) 0' },
+      tablet: { fontSize: 'var(--text-lg)', padding: 'var(--space-xs) 0' },
+      desktop: { fontSize: 'var(--text-lg)', padding: 'var(--space-xs) 0' },
+    };
+
+    return {
+      display: 'inline-block',
+      color: hoveredOutbound === key ? '#FFEEA9' : 'rgba(255, 255, 255, 0.85)',
+      fontWeight: '700',
+      fontFamily: 'Lato, sans-serif',
+      textDecoration: 'none',
+      transition: 'color 0.2s ease',
+      ...configs[deviceType],
+    };
+  };
+
   // Menu configuration
   const menuItems = [
     { name: 'Port Jeffrey', key: 'home' as PageName },
     { name: 'Profile', key: 'profile' as PageName },
     { name: 'Skillset', key: 'skillset' as PageName },
     { name: 'Portfolio', key: 'portfolio' as PageName },
+  ];
+
+  const outboundLinks = [
+    { key: 'case-studies', label: 'Case studies ↗', href: LINKS.caseStudies },
+    { key: 'resume', label: 'Résumé (PDF) ↗', href: LINKS.resume },
   ];
 
   const iconColor = isHovered
@@ -488,6 +515,43 @@ export default function BurgerMenu({
                 {item.name}
               </motion.button>
             ))}
+
+            {/* Links that leave the island */}
+            <motion.div
+              initial={
+                shouldAnimate ? { opacity: 0, x: 20 } : { opacity: 1, x: 0 }
+              }
+              animate={{ opacity: 1, x: 0 }}
+              transition={
+                shouldAnimate
+                  ? { delay: menuItems.length * 0.12, duration: 0.4, ease: 'easeOut' }
+                  : { duration: 0 }
+              }
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: deviceType === 'mobile-landscape' ? '0.125rem' : 'var(--space-xs)',
+                marginTop: deviceType === 'mobile-landscape' ? '0.25rem' : 'var(--space-sm)',
+                paddingTop: deviceType === 'mobile-landscape' ? '0.375rem' : 'var(--space-md)',
+                borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+              }}
+            >
+              {outboundLinks.map((link) => (
+                <a
+                  key={link.key}
+                  href={link.href}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  onClick={() => onPlayClickSound?.()}
+                  onMouseEnter={() => setHoveredOutbound(link.key)}
+                  onMouseLeave={() => setHoveredOutbound(null)}
+                  style={getOutboundLinkStyles(link.key)}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </motion.div>
 
             {/* Connect Button */}
             <motion.div

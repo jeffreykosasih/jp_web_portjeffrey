@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DeviceInfo } from '../lib/types';
+import { LINKS, PROFILE } from '../lib/profile';
 
 interface CreditsPopupProps {
   isVisible: boolean;
@@ -240,6 +241,24 @@ export default function CreditsPopup({
             style={getPopupStyles()}
           >
             <h2 style={getTitleStyles()}>Credits</h2>
+            <p style={{ ...getSubtitleStyles(), marginBottom: '12px' }}>
+              Designed and built by {PROFILE.name} with React, Three.js (React
+              Three Fiber) and Motion.{' '}
+              <a
+                href={LINKS.siteCode}
+                target='_blank'
+                rel='noopener noreferrer'
+                style={getLinkStyles()}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#ffffff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#FFEEA9';
+                }}
+              >
+                See the code ↗
+              </a>
+            </p>
             <p style={getSubtitleStyles()}>
               Credits to all these people who made such amazing models.
             </p>

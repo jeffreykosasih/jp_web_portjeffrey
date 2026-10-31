@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import './ProfileCard.css';
+import { PROFILE } from '../lib/profile';
 
 interface ProfileCardProps {
   avatarUrl?: string;
@@ -69,8 +70,8 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
   className = '',
   enableTilt = true,
   miniAvatarUrl,
-  name = 'Jeffrey Kosasih',
-  title = 'Web Developer',
+  name = PROFILE.name,
+  title = PROFILE.role,
   handle = 'jeffreyk',
   status = 'Online',
   contactText = 'Contact',
@@ -290,7 +291,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
           <img
             className='pc-background-image'
             src={avatarUrl}
-            alt={`${name || 'User'} avatar`}
+            alt={`Photo of ${name || 'Jeffrey'}`}
             loading='lazy'
             onLoad={() => {
               setImageLoaded(true);

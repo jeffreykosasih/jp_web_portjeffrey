@@ -80,9 +80,11 @@ export default function LongStoryPage({
       zIndex: ResponsiveValues.zIndex.overlay,
       display: 'flex',
       flexDirection: 'column' as const,
-      justifyContent: 'center',
+      // Auto margins on the content centre it, and long text can scroll
+      justifyContent: 'flex-start',
       alignItems: 'center',
       color: '#ffffff',
+      overflowY: 'auto' as const,
       ...configs[deviceType],
     };
   };
@@ -94,6 +96,12 @@ export default function LongStoryPage({
       display: 'flex',
       flexDirection: 'column' as const,
       alignItems: 'center',
+      marginTop: 'auto',
+      marginBottom: 'auto',
+      paddingTop:
+        deviceType === 'mobile-landscape' || deviceType === 'mobile-portrait'
+          ? 'var(--space-3xl)' // clear the back button
+          : 0,
     };
 
     return baseStyles;
@@ -223,6 +231,7 @@ export default function LongStoryPage({
               onPlayClickSound?.();
               onClose();
             }}
+            aria-label='Back to About me'
             initial={{ x: 20 }}
             animate={{ x: 0 }}
             whileHover={{ x: -5 }}
@@ -271,15 +280,21 @@ export default function LongStoryPage({
             >
               <h1 style={getTitleStyles()}>Long Story 📖</h1>
               <p style={{ marginBottom: 'var(--space-lg)' }}>
-                {' '}
-                {/* Using CSS custom property */}I was born in Indonesia, got a
-                bachelor of computer science and now pursuing MIT degree in
-                Melbourne. Had experience from lots of related field like being
-                part of Apple Developer academy where I learn business, UI/UX
-                design and coding in general. Then work as product owner at
-                bank, becoming free lance making sites, also joining a bootcamp
-                program. Now, I'm looking for developer jobs or design if
-                possible so if you're interested, let's reach out!
+                I was born in Indonesia and studied Information Technology at
+                the University of Ciputra in Surabaya. At the Apple Developer
+                Academy I learned business, UI/UX design and coding, and was
+                product manager and software engineer on Readdy, an app that
+                lets people with dyslexia scan text and read it more easily.
+              </p>
+              <p style={{ marginBottom: 'var(--space-lg)' }}>
+                After that I worked as a Product Owner at Bank Central Asia,
+                built websites as a freelancer, and joined a bootcamp. I’ve now
+                finished my Master of Information Technology at Kaplan Business
+                School in Melbourne.
+              </p>
+              <p style={{ marginBottom: 'var(--space-lg)' }}>
+                I’m looking for UX/UI and web design roles, so if you’re
+                hiring, let’s talk!
               </p>
             </motion.div>
           </motion.div>

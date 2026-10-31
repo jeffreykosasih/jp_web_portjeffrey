@@ -1,6 +1,10 @@
-# Port Jeffrey - 3D Portfolio Project
+# Port Jeffrey
 
-A modern, interactive 3D portfolio built with React, Three.js, and TypeScript featuring an animated island scene with dynamic lighting and particle effects.
+A 3D island portfolio by Jeffrey Ko, a UX/UI designer who codes. Every landmark on the island is labelled, so visitors can find the work without guessing.
+
+**Live:** [portjeffrey.vercel.app](https://portjeffrey.vercel.app) · **Case study:** [jeffreyko.com/pj/port-jeffrey](https://www.jeffreyko.com/pj/port-jeffrey)
+
+Built with React, TypeScript, Three.js (React Three Fiber), Framer Motion and Vite. Credits for the 3D models are in the site's Credits panel.
 
 ## 🚀 **Recent Optimizations & Cleanup**
 

@@ -1,17 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faArrowLeft,
-  faExternalLinkAlt,
-  faRocket,
-} from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { DeviceInfo } from '../lib/types';
-import {
-  getResponsiveValue,
-  getSpacing,
-  ResponsiveValues,
-} from '../lib/responsiveUtils';
+import { ResponsiveValues } from '../lib/responsiveUtils';
+import { LINKS } from '../lib/profile';
 
 interface PortfolioPageProps {
   isVisible: boolean;
@@ -23,6 +16,123 @@ interface PortfolioPageProps {
   onPlayClickSound?: () => void;
 }
 
+interface ProjectLink {
+  label: string;
+  href: string;
+}
+
+interface Project {
+  title: string;
+  kind: string; // what it is, and whether it shipped or is a concept
+  summary: string; // the problem it solves, in one line
+  image: string;
+  tech: string[]; // checked against each repo's package.json
+  links: ProjectLink[];
+}
+
+const projects: Project[] = [
+  {
+    title: 'Katsu Seiba',
+    kind: 'Restaurant website · Concept',
+    summary:
+      'Menu, locations and table booking, with booking one tap away from every section.',
+    image: '/assets/images/project_katsu.jpg',
+    tech: ['React', 'JavaScript', 'Tailwind', 'Motion'],
+    links: [
+      { label: 'Live site', href: 'https://katsuseiba.vercel.app' },
+      { label: 'Case study', href: 'https://www.jeffreyko.com/pj/katsu-seiba' },
+      { label: 'Code', href: 'https://github.com/jeffreykosasih/katsuseiba' },
+    ],
+  },
+  {
+    title: 'Port Jeffrey',
+    kind: '3D portfolio · This site',
+    summary:
+      'An island you can explore, with every landmark labelled so the work is never hidden.',
+    image: '/assets/images/project_island.jpg',
+    tech: ['Three.js', 'React', 'TypeScript', 'Motion'],
+    links: [
+      { label: 'Case study', href: 'https://www.jeffreyko.com/pj/port-jeffrey' },
+      { label: 'Code', href: LINKS.siteCode },
+    ],
+  },
+  {
+    title: 'Muscle Memory',
+    kind: 'Workout web app · Personal',
+    summary:
+      'Exercises grouped by muscle: pick a group and get the moves for it.',
+    image: '/assets/images/project_muscle.jpg',
+    tech: ['Next.js', 'TypeScript', 'Tailwind', 'Motion'],
+    links: [
+      { label: 'Live site', href: 'https://musclememo.vercel.app' },
+      { label: 'Code', href: 'https://github.com/jeffreykosasih/musclememory' },
+    ],
+  },
+];
+
+type DeviceType = 'mobile-landscape' | 'mobile-portrait' | 'tablet' | 'desktop';
+
+// Per-device sizes for the cards, kept together so they are easy to tune
+const cardSizes: Record<
+  DeviceType,
+  {
+    width: string;
+    minWidth: string;
+    maxWidth: string;
+    imageHeight: string;
+    padding: string;
+    title: string;
+    summary: string;
+    tag: string;
+    link: string;
+  }
+> = {
+  'mobile-landscape': {
+    width: 'auto',
+    minWidth: '12rem',
+    maxWidth: '15rem',
+    imageHeight: '5.5rem',
+    padding: 'var(--space-md)',
+    title: 'var(--text-base)',
+    summary: 'var(--text-xs)',
+    tag: 'var(--text-xs)',
+    link: 'var(--text-xs)',
+  },
+  'mobile-portrait': {
+    width: '100%',
+    minWidth: '0',
+    maxWidth: '24rem',
+    imageHeight: '8rem',
+    padding: 'var(--space-base)',
+    title: 'var(--text-lg)',
+    summary: 'var(--text-sm)',
+    tag: 'var(--text-xs)',
+    link: 'var(--text-sm)',
+  },
+  tablet: {
+    width: 'auto',
+    minWidth: '14rem',
+    maxWidth: '19rem',
+    imageHeight: '9rem',
+    padding: 'var(--space-base) var(--space-lg) var(--space-lg)',
+    title: 'var(--text-lg)',
+    summary: 'var(--text-sm)',
+    tag: 'var(--text-xs)',
+    link: 'var(--text-sm)',
+  },
+  desktop: {
+    width: 'auto',
+    minWidth: '15rem',
+    maxWidth: '20rem',
+    imageHeight: '11rem',
+    padding: 'var(--space-base) var(--space-lg) var(--space-lg)',
+    title: 'var(--text-xl)',
+    summary: 'calc(var(--text-sm) + 0.05rem)',
+    tag: 'var(--text-xs)',
+    link: 'var(--text-sm)',
+  },
+};
+
 export default function PortfolioPage({
   isVisible,
   onClose,
@@ -32,14 +142,10 @@ export default function PortfolioPage({
   deviceInfo,
   onPlayClickSound,
 }: PortfolioPageProps) {
-  const [isButtonHovered, setIsButtonHovered] = React.useState(false);
+  const [hoveredLink, setHoveredLink] = React.useState<string | null>(null);
 
   // Enhanced device type detection with iPhone-specific breakpoints
-  const getDeviceType = ():
-    | 'mobile-landscape'
-    | 'mobile-portrait'
-    | 'tablet'
-    | 'desktop' => {
+  const getDeviceType = (): DeviceType => {
     if (!deviceInfo) return 'desktop';
 
     // Enhanced landscape mobile detection for iPhone 12 Pro and similar devices
@@ -58,6 +164,10 @@ export default function PortfolioPage({
   };
 
   const deviceType = getDeviceType();
+  const isPhone =
+    deviceType === 'mobile-landscape' || deviceType === 'mobile-portrait';
+  const size = cardSizes[deviceType];
+  const brand = isDarkMode ? '#162542' : '#005E80';
 
   // Responsive styles based on device type (following ProfilePage pattern)
   const getContainerStyles = () => {
@@ -92,7 +202,9 @@ export default function PortfolioPage({
       zIndex: ResponsiveValues.zIndex.overlay,
       display: 'flex',
       flexDirection: 'column' as const,
-      justifyContent: 'center',
+      // Content centres itself with auto margins, so when it is taller than
+      // the screen it scrolls instead of being cut off at the top.
+      justifyContent: 'flex-start',
       alignItems: 'center',
       color: '#ffffff',
       overflowY: 'auto' as const,
@@ -100,41 +212,26 @@ export default function PortfolioPage({
     };
   };
 
-  const projects = [
-    {
-      title: 'Katsu Retsu',
-      description:
-        'Front end site for Japanese restaurant with modern theme and animation',
-      link: 'http://katsuseiba.vercel.app',
-      status: 'Completed',
-      image: '/assets/images/project_katsu.jpg',
-      tech: ['JavaScript', 'Motion', 'Node.js', 'React', 'Tailwind'],
-    },
-    {
-      title: 'Port Jeffrey',
-      description:
-        'Main site with island theme where I learn some three.js and movement!',
-      link: 'https://jefri.dev',
-      status: 'Completed',
-      image: '/assets/images/project_island.jpg',
-      tech: ['Motion', 'Node.js', 'React', 'Tailwind', 'TypeScript'],
-    },
-    {
-      title: 'Muscle Memory',
-      description: 'Simplify list of exercises for easier approach',
-      link: 'https://musclememo.vercel.app',
-      status: 'Completed',
-      image: '/assets/images/project_muscle.jpg',
-      tech: ['Motion', 'Node.js', 'React', 'Tailwind', 'TypeScript'],
-    },
-    {
-      title: 'Coming Soon!',
-      description: 'This slot is available for future projects.',
-      link: null,
-      status: 'Upcoming',
-      icon: faRocket,
-    },
-  ];
+  const getLinkStyles = (key: string): React.CSSProperties => {
+    const isHovered = hoveredLink === key;
+    return {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '0.3em',
+      minHeight: isPhone ? '2.25rem' : '2rem',
+      padding: '0 0.625rem',
+      borderRadius: 'var(--radius-full)',
+      border: '1px solid rgba(255, 255, 255, 0.45)',
+      backgroundColor: isHovered ? '#ffffff' : 'transparent',
+      color: isHovered ? brand : '#ffffff',
+      fontFamily: 'Lato, sans-serif',
+      fontWeight: 700,
+      fontSize: size.link,
+      textDecoration: 'none',
+      whiteSpace: 'nowrap',
+      transition: 'background-color 0.15s ease, color 0.15s ease',
+    };
+  };
 
   return (
     <AnimatePresence>
@@ -146,7 +243,6 @@ export default function PortfolioPage({
           transition={{ duration: 0.5 }}
           style={{
             ...getContainerStyles(),
-            transition: '0.5',
             visibility: isVisible ? 'visible' : 'hidden',
             pointerEvents: isVisible ? 'auto' : 'none',
           }}
@@ -158,6 +254,7 @@ export default function PortfolioPage({
               onClose(); // Close current page
               onOpenBurgerMenu('right'); // Open burger menu sliding from right corner
             }}
+            aria-label='Back to menu'
             initial={{ x: 20 }}
             animate={{ x: 0 }}
             whileHover={{ x: -5 }}
@@ -191,15 +288,14 @@ export default function PortfolioPage({
                   ? 'var(--touch-target-md)'
                   : 'var(--touch-target-lg)',
               border: 'none',
-              backgroundColor: isDarkMode ? '#162542' : '#005E80',
+              backgroundColor: brand,
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
+              flexShrink: 0,
             }}
-            onMouseEnter={() => setIsButtonHovered(true)}
-            onMouseLeave={() => setIsButtonHovered(false)}
           >
             <FontAwesomeIcon
               icon={faArrowLeft}
@@ -228,13 +324,9 @@ export default function PortfolioPage({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: deviceInfo?.isMobile ? 'flex-start' : 'center',
-              minHeight: deviceInfo?.isMobile ? 'calc(100vh - 120px)' : 'auto',
-              paddingTop:
-                deviceType === 'mobile-landscape' ||
-                deviceType === 'mobile-portrait'
-                  ? 'var(--space-5xl)'
-                  : 'var(--space-lg)', // Space for back button
+              marginTop: 'auto',
+              marginBottom: 'auto',
+              paddingTop: isPhone ? 'var(--space-5xl)' : 'var(--space-lg)', // Space for back button
             }}
           >
             {/* Header */}
@@ -242,7 +334,7 @@ export default function PortfolioPage({
               style={{
                 fontSize:
                   deviceType === 'mobile-landscape'
-                    ? 'var(--text-2xl)' // Proportionate header for compact desktop style
+                    ? 'var(--text-2xl)'
                     : deviceType === 'mobile-portrait'
                     ? 'var(--mobile-text-display)'
                     : deviceType === 'tablet'
@@ -250,19 +342,7 @@ export default function PortfolioPage({
                     : 'var(--text-6xl)',
                 fontWeight: '900',
                 fontFamily: 'Lato, sans-serif',
-                marginBottom:
-                  deviceType === 'mobile-landscape'
-                    ? 'var(--space-xs)' // Compact spacing for desktop-style layout
-                    : deviceType === 'mobile-portrait'
-                    ? 'var(--space-base)'
-                    : deviceType === 'tablet'
-                    ? 'var(--space-lg)'
-                    : 'calc(var(--space-xl) + 0.3125rem)',
-                marginTop:
-                  deviceType === 'mobile-landscape' ||
-                  deviceType === 'mobile-portrait'
-                    ? '0'
-                    : 'var(--space-lg)',
+                margin: 0,
                 background: 'linear-gradient(45deg, #ffffff, #e2e8f0)',
                 WebkitBackgroundClip: 'text',
                 backgroundClip: 'text',
@@ -273,6 +353,25 @@ export default function PortfolioPage({
             >
               Portfolio
             </h1>
+            <p
+              style={{
+                margin: 0,
+                marginTop:
+                  deviceType === 'mobile-landscape' ? '0.125rem' : 'var(--space-sm)',
+                fontFamily: 'Lato, sans-serif',
+                fontWeight: 400,
+                fontSize:
+                  deviceType === 'mobile-landscape'
+                    ? 'var(--text-sm)'
+                    : isPhone
+                    ? 'var(--text-base)'
+                    : 'var(--text-lg)',
+                color: 'rgba(255, 255, 255, 0.85)',
+                textAlign: 'center',
+              }}
+            >
+              Things I designed and built on my own.
+            </p>
 
             {/* Projects List */}
             <motion.div
@@ -287,49 +386,42 @@ export default function PortfolioPage({
               }
               style={{
                 display: 'flex',
+                flexDirection: deviceType === 'mobile-portrait' ? 'column' : 'row',
                 justifyContent: 'center',
-                alignItems: 'stretch',
+                alignItems: deviceType === 'mobile-portrait' ? 'center' : 'stretch',
                 gap:
                   deviceType === 'mobile-landscape'
-                    ? 'var(--space-md)' // Smaller gap for horizontal layout
+                    ? 'var(--space-md)'
                     : deviceType === 'mobile-portrait'
                     ? 'var(--space-base)'
-                    : deviceType === 'tablet'
-                    ? 'calc(var(--space-xl) + 0.625rem)'
                     : 'calc(var(--space-xl) + 0.625rem)',
                 padding:
                   deviceType === 'mobile-landscape'
-                    ? '0 var(--space-base)' // Reduced padding
+                    ? '0 var(--space-base)'
                     : deviceType === 'mobile-portrait'
-                    ? '0 var(--space-sm)'
+                    ? '0'
                     : '0 var(--space-lg)',
-                flexWrap: 'wrap',
+                flexWrap: deviceType === 'mobile-portrait' ? 'nowrap' : 'wrap',
                 marginTop:
                   deviceType === 'mobile-landscape'
-                    ? 'var(--space-sm)'
+                    ? 'var(--space-md)'
                     : deviceType === 'mobile-portrait'
                     ? 'var(--space-lg)'
-                    : deviceType === 'tablet'
-                    ? 'calc(var(--space-xl) + 0.625rem)'
                     : 'calc(var(--space-xl) + 0.625rem)',
-                marginBottom:
-                  deviceType === 'mobile-landscape' ||
-                  deviceType === 'mobile-portrait'
-                    ? 'var(--space-lg)'
-                    : 'var(--space-lg)',
+                marginBottom: 'var(--space-lg)',
                 maxWidth: deviceType === 'mobile-landscape' ? '95vw' : '1200px',
                 width: '100%',
               }}
             >
               {projects.map((project, index) => (
-                <motion.div
-                  key={index}
+                <motion.article
+                  key={project.title}
                   initial={
                     shouldAnimateText
-                      ? { opacity: 0, y: 10, scale: 1 }
-                      : { opacity: 1, y: 0, scale: 1 }
+                      ? { opacity: 0, y: 10 }
+                      : { opacity: 1, y: 0 }
                   }
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={
                     shouldAnimateText
                       ? {
@@ -339,249 +431,149 @@ export default function PortfolioPage({
                         }
                       : { duration: 0 }
                   }
-                  whileHover={{
-                    y: -12,
-                    transition: { duration: 0.08, ease: 'easeOut' },
-                  }}
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
-                    padding: 0,
                     borderRadius: '16px',
                     backgroundColor: isDarkMode
                       ? 'rgba(255, 255, 255, 0.15)'
-                      : 'rgba(255, 255, 255, 0.08)',
-
-                    cursor: project.link ? 'pointer' : 'default',
-                    flex: '1',
-                    minWidth:
-                      deviceType === 'mobile-landscape'
-                        ? '9rem' // Compact desktop-style size (144px)
-                        : deviceType === 'mobile-portrait'
-                        ? '10rem'
-                        : deviceType === 'tablet'
-                        ? '14.0625rem'
-                        : '14.0625rem',
-                    maxWidth:
-                      deviceType === 'mobile-landscape'
-                        ? '11rem' // Smaller maximum width (176px) for horizontal layout
-                        : deviceType === 'mobile-portrait'
-                        ? '11.875rem'
-                        : deviceType === 'tablet'
-                        ? '15.625rem'
-                        : '15.625rem',
-                    height:
-                      deviceType === 'mobile-landscape'
-                        ? '20rem' // Increased height to prevent text overlap (320px)
-                        : deviceType === 'mobile-portrait'
-                        ? '22.5rem'
-                        : deviceType === 'tablet'
-                        ? '32.5rem'
-                        : '32.5rem',
-                    opacity: project.link ? 1 : 0.7,
-                    position: 'relative',
+                      : 'rgba(255, 255, 255, 0.12)',
+                    flex: deviceType === 'mobile-portrait' ? 'none' : '1 1 0',
+                    width: size.width,
+                    minWidth: size.minWidth,
+                    maxWidth: size.maxWidth,
                     overflow: 'hidden',
                   }}
-                  onClick={() => {
-                    if (project.link) {
-                      window.open(project.link, '_blank');
-                    }
-                  }}
                 >
-                  {/* Project Image or Icon */}
-                  <div
+                  <img
+                    src={project.image}
+                    alt=''
+                    loading='lazy'
                     style={{
+                      display: 'block',
                       width: '100%',
-                      height: deviceType === 'mobile-landscape' ? '55%' : '60%', // Reduced image area for mobile landscape
-                      borderRadius: project.image
-                        ? 'var(--radius-lg) var(--radius-lg) 0 0'
-                        : 'var(--radius-lg)',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: project.image
-                        ? 'transparent'
-                        : 'rgba(255, 255, 255, 0.1)',
-                      position: 'relative',
+                      height: size.imageHeight,
+                      objectFit: 'cover',
                     }}
-                  >
-                    {project.image ? (
-                      <img
-                        src={project.image}
-                        alt={project.title}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          borderRadius: '20px',
-                        }}
-                      />
-                    ) : (
-                      (project as any).icon && (
-                        <FontAwesomeIcon
-                          icon={(project as any).icon}
-                          style={{
-                            fontSize:
-                              deviceType === 'mobile-landscape' ||
-                              deviceType === 'mobile-portrait'
-                                ? 'var(--text-2xl)'
-                                : 'calc(var(--text-2xl) + 0.375rem)',
-                            color: 'rgba(255, 255, 255, 0.6)',
-                          }}
-                        />
-                      )
-                    )}
+                  />
 
-                    {/* External Link Icon - Top Right Corner */}
-                    {project.link && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: '8px',
-                          right: '8px',
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          zIndex: 10,
-                        }}
-                      >
-                        <FontAwesomeIcon
-                          icon={faExternalLinkAlt}
-                          style={{
-                            fontSize: '10px',
-                            color: '#ffffff',
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Title & Description Section */}
                   <div
                     style={{
-                      height: deviceType === 'mobile-landscape' ? '25%' : '20%', // More space for text on mobile landscape
-                      width: '100%',
-                      padding:
-                        deviceType === 'mobile-landscape'
-                          ? 'var(--space-md) var(--space-md) var(--space-sm) var(--space-md)' // More top padding for better separation
-                          : deviceType === 'mobile-portrait'
-                          ? 'var(--space-sm) var(--space-md)'
-                          : 'var(--space-sm) var(--space-base)',
                       display: 'flex',
                       flexDirection: 'column',
-                      justifyContent: 'center',
+                      flex: 1,
+                      padding: size.padding,
+                      gap: deviceType === 'mobile-landscape' ? '0.375rem' : 'var(--space-sm)',
+                      textAlign: 'left',
                     }}
                   >
-                    <h4
+                    <p
                       style={{
-                        fontSize:
-                          deviceType === 'mobile-landscape'
-                            ? 'var(--text-base)' // Compact size for horizontal cards
-                            : deviceType === 'mobile-portrait'
-                            ? 'var(--text-base)'
-                            : 'calc(var(--text-base) + 0.1rem)',
-                        fontWeight: '700',
+                        margin: 0,
                         fontFamily: 'Lato, sans-serif',
-                        marginBottom:
-                          deviceType === 'mobile-landscape' ? '8px' : '6px', // More space between title and description
+                        fontWeight: 700,
+                        fontSize: 'var(--text-xs)',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        color: 'rgba(255, 255, 255, 0.75)',
+                      }}
+                    >
+                      {project.kind}
+                    </p>
+                    <h2
+                      style={{
+                        margin: 0,
+                        fontFamily: 'Lato, sans-serif',
+                        fontWeight: 800,
+                        fontSize: size.title,
+                        lineHeight: 1.2,
                         color: '#ffffff',
-                        textAlign: 'center',
-                        marginTop: 0,
-                        marginLeft: 0,
-                        marginRight: 0,
-                        lineHeight: '1.3',
                       }}
                     >
                       {project.title}
-                    </h4>
+                    </h2>
                     <p
                       style={{
-                        fontSize:
-                          deviceType === 'mobile-landscape'
-                            ? 'calc(var(--text-sm) - 0.125rem)' // Smaller text for compact cards
-                            : deviceType === 'mobile-portrait'
-                            ? 'calc(var(--text-sm) - 0.125rem)'
-                            : 'calc(var(--text-sm) + 0.05rem)',
-                        fontFamily: 'Lato, sans-serif',
-                        fontWeight: '400',
-                        color: 'rgba(255, 255, 255, 0.8)',
-                        textAlign: 'center',
                         margin: 0,
-                        lineHeight: '1.2',
+                        fontFamily: 'Lato, sans-serif',
+                        fontWeight: 400,
+                        fontSize: size.summary,
+                        lineHeight: 1.45,
+                        color: 'rgba(255, 255, 255, 0.88)',
                       }}
                     >
-                      {project.description}
+                      {project.summary}
                     </p>
-                  </div>
 
-                  {/* Technology Tags Section */}
-                  {project.tech && (
+                    {/* Technology tags */}
+                    <ul
+                      aria-label='Built with'
+                      style={{
+                        listStyle: 'none',
+                        margin: 0,
+                        padding: 0,
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '4px',
+                      }}
+                    >
+                      {project.tech.map((tech) => (
+                        <li
+                          key={tech}
+                          style={{
+                            padding: '0.2rem 0.5rem',
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            borderRadius: 'var(--radius-xs, 4px)',
+                            fontSize: size.tag,
+                            fontWeight: 500,
+                            fontFamily: 'Lato, sans-serif',
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            border: '1px solid rgba(255, 255, 255, 0.12)',
+                          }}
+                        >
+                          {tech}
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* Live site, case study and code */}
                     <div
                       style={{
-                        height:
-                          deviceType === 'mobile-landscape' ? '20%' : '20%', // Maintain proportion for tags
-                        width: '100%',
-                        padding:
-                          deviceType === 'mobile-landscape'
-                            ? 'var(--space-xs) var(--space-md) var(--space-lg) var(--space-md)' // More bottom padding for proper spacing
-                            : deviceType === 'mobile-portrait'
-                            ? 'var(--space-xs) var(--space-md) var(--space-md) var(--space-md)'
-                            : 'var(--space-sm) var(--space-base) var(--space-base) var(--space-base)',
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        flexWrap: 'wrap',
+                        gap: '0.375rem',
+                        marginTop: 'auto',
+                        paddingTop: deviceType === 'mobile-landscape' ? '0.25rem' : 'var(--space-sm)',
                       }}
                     >
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: '4px', // Consistent compact gap
-                          justifyContent: 'center',
-                        }}
-                      >
-                        {project.tech.slice(0, 7).map((tech) => (
-                          <span
-                            key={tech}
-                            style={{
-                              padding:
-                                deviceType === 'mobile-landscape'
-                                  ? 'var(--space-xs) var(--space-sm)' // Compact padding for horizontal cards
-                                  : deviceType === 'mobile-portrait'
-                                  ? 'var(--space-xs) var(--space-sm)'
-                                  : 'var(--space-sm) var(--space-md)',
-                              background: 'rgba(255, 255, 255, 0.1)',
-                              borderRadius: 'var(--radius-xs)',
-                              fontSize:
-                                deviceType === 'mobile-landscape'
-                                  ? 'var(--text-xs)' // Cleaner font size for mobile landscape
-                                  : deviceType === 'mobile-portrait'
-                                  ? 'calc(var(--text-xs) + 0.025rem)'
-                                  : 'calc(var(--text-xs) + 0.075rem)',
-                              fontWeight: '500',
-                              fontFamily: 'Lato, sans-serif',
-                              color: 'rgba(255, 255, 255, 0.9)',
-                              border: '1px solid rgba(255, 255, 255, 0.1)',
-                              textAlign: 'center',
-                            }}
+                      {project.links.map((link) => {
+                        const key = `${project.title}-${link.label}`;
+                        return (
+                          <a
+                            key={key}
+                            href={link.href}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            aria-label={`${project.title}: ${link.label} (opens in a new tab)`}
+                            onMouseEnter={() => setHoveredLink(key)}
+                            onMouseLeave={() => setHoveredLink(null)}
+                            onFocus={() => setHoveredLink(key)}
+                            onBlur={() => setHoveredLink(null)}
+                            style={getLinkStyles(key)}
                           >
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
+                            {link.label}
+                            <span aria-hidden='true'>↗</span>
+                          </a>
+                        );
+                      })}
                     </div>
-                  )}
-                </motion.div>
+                  </div>
+                </motion.article>
               ))}
             </motion.div>
 
             {/* Footer */}
-            <motion.div
+            <motion.p
               initial={
                 shouldAnimateText ? { opacity: 0, y: 20 } : { opacity: 1, y: 0 }
               }
@@ -592,33 +584,29 @@ export default function PortfolioPage({
                   : { duration: 0 }
               }
               style={{
-                marginTop:
-                  deviceType === 'mobile-landscape' ||
-                  deviceType === 'mobile-portrait'
-                    ? 'calc(var(--space-md) + 0.1875rem)'
-                    : 'var(--space-lg)',
+                margin: 0,
+                fontSize: isPhone ? 'var(--text-sm)' : 'calc(var(--text-sm) + 0.05rem)',
+                fontFamily: 'Lato, sans-serif',
+                fontWeight: 400,
+                color: 'rgba(255, 255, 255, 0.8)',
                 textAlign: 'center',
+                lineHeight: '1.3',
               }}
             >
-              <p
+              More case studies at{' '}
+              <a
+                href={LINKS.caseStudies}
+                target='_blank'
+                rel='noopener noreferrer'
                 style={{
-                  fontSize:
-                    deviceType === 'mobile-landscape'
-                      ? 'var(--text-sm)' // Proportionate footer text for compact layout
-                      : deviceType === 'mobile-portrait'
-                      ? 'var(--text-sm)'
-                      : 'calc(var(--text-sm) + 0.05rem)',
-                  fontFamily: 'Lato, sans-serif',
-                  fontWeight: '400',
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  margin: 0,
-                  lineHeight: '1.3',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  textUnderlineOffset: '0.2em',
                 }}
               >
-                Currently research and develop projects that can be meaningful
-                as well
-              </p>
-            </motion.div>
+                jeffreyko.com ↗
+              </a>
+            </motion.p>
           </motion.div>
         </motion.div>
       )}
