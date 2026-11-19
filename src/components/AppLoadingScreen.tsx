@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DeviceInfo } from '../lib/types';
-import { PROFILE } from '../lib/profile';
 
 interface AppLoadingScreenProps {
   onLoadingComplete: () => void;
@@ -17,6 +16,49 @@ const DOTS_DURATION = 800; // 0.8 seconds (faster loading)
 const TITLE_DELAY = 300; // shortly after dots fade out
 const BUTTON_DELAY = 600; // shortly after title appears
 const TRANSITION_DURATION = 1200; // 1.2 seconds for fade out/in
+
+// Three layers of waves rolling along the bottom of the welcome screen.
+// Each path repeats every half width, so sliding it by 50% loops seamlessly.
+function OpeningWaves({ isDarkMode }: { isDarkMode: boolean }) {
+  const layers = isDarkMode
+    ? ['#1c2f55', '#22396a', '#2b467c']
+    : ['#0b6a90', '#1782ac', '#2394bf'];
+  const wave =
+    'M0,60 C120,22 240,22 360,60 C480,98 600,98 720,60 C840,22 960,22 1080,60 C1200,98 1320,98 1440,60 L1440,120 L0,120 Z';
+  return (
+    <div
+      aria-hidden='true'
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: '30vh',
+        overflow: 'hidden',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}
+    >
+      {layers.map((color, i) => (
+        <svg
+          key={color}
+          className={`opening-wave opening-wave-${i}`}
+          viewBox='0 0 1440 120'
+          preserveAspectRatio='none'
+          style={{
+            position: 'absolute',
+            left: 0,
+            bottom: 0,
+            width: '200%',
+            height: `${100 - i * 22}%`,
+          }}
+        >
+          <path d={wave} fill={color} />
+        </svg>
+      ))}
+    </div>
+  );
+}
 
 export default function AppLoadingScreen({
   onLoadingComplete,
@@ -190,49 +232,6 @@ export default function AppLoadingScreen({
     }
   }, [isDarkMode, colors.text, deviceInfo]);
 
-  // Who this is and what the site is, right under the title
-  const introStyles = React.useMemo(() => {
-    const isLandscapeMobile = !!deviceInfo?.isLandscapeMobile;
-    const isMobile = !!deviceInfo?.isMobile;
-    const isTablet = !!deviceInfo?.isTablet;
-    return {
-      wrapper: {
-        display: 'flex',
-        flexDirection: 'column' as const,
-        alignItems: 'center',
-        gap: isLandscapeMobile ? '0.125rem' : 'var(--space-sm)',
-        textAlign: 'center' as const,
-        fontFamily: "'Lato', sans-serif",
-        color: colors.text,
-        maxWidth: '40rem',
-        padding: '0 var(--space-base)',
-      },
-      role: {
-        margin: 0,
-        fontWeight: 700,
-        lineHeight: 1.3,
-        fontSize: isLandscapeMobile
-          ? 'var(--text-base)'
-          : isMobile
-          ? 'var(--text-lg)'
-          : isTablet
-          ? 'var(--text-xl)'
-          : 'var(--text-2xl)',
-      },
-      line: {
-        margin: 0,
-        fontWeight: 400,
-        lineHeight: 1.4,
-        opacity: 0.85,
-        fontSize: isLandscapeMobile
-          ? 'var(--text-sm)'
-          : isMobile
-          ? 'var(--text-base)'
-          : 'var(--text-lg)',
-      },
-    };
-  }, [colors.text, deviceInfo]);
-
   const handleButtonMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'translateY(-0.125rem)'; // Converted to rem
     e.currentTarget.style.backgroundColor = isDarkMode ? '#f0f0a0' : '#f0f0f0'; // Lighter yellow/gray on hover
@@ -278,7 +277,8 @@ export default function AppLoadingScreen({
 
   return (
     <div style={containerStyles}>
-      <div style={contentStyles}>
+      <OpeningWaves isDarkMode={isDarkMode} />
+      <div style={{ ...contentStyles, zIndex: 1 }}>
         {/* Main Content Area */}
         <div
           style={{
@@ -397,24 +397,6 @@ export default function AppLoadingScreen({
               )}
             </AnimatePresence>
           </div>
-
-          {/* Who this is, so nobody has to explore to find out */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={showTitle ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-            transition={{ duration: 0.6, delay: showTitle ? 0.25 : 0 }}
-            style={introStyles.wrapper}
-            aria-hidden={!showTitle}
-          >
-            <p style={introStyles.role}>
-              {PROFILE.name} — {PROFILE.role}
-            </p>
-            {!deviceInfo?.isLandscapeMobile && (
-              <p style={introStyles.line}>
-                A 3D portfolio I designed and built in React and{' '}Three.js.
-              </p>
-            )}
-          </motion.div>
 
           {/* Button Area */}
           <div

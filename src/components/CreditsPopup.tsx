@@ -10,21 +10,37 @@ interface CreditsPopupProps {
   deviceInfo?: DeviceInfo;
 }
 
+// Models on the island that need credit (all CC BY 4.0 on Sketchfab)
 const creditsData = [
   {
-    name: 'Low Poly Surfboards',
-    url: 'https://skfb.ly/otRoz',
-    author: 'gabrielmendesm',
+    name: 'Dog Harvest Moon',
+    url: 'https://sketchfab.com/3d-models/dog-harvest-moon-7a034e47c5eb4afe95e08c2e7d74f403',
+    author: 'Smoon',
   },
   {
-    name: 'Moai Stone Head 🗿🗿🗿  Low Poly Stylized',
-    url: 'https://skfb.ly/oQSEC',
-    author: 'Shaz',
+    name: 'Low Poly Computer Desk',
+    url: 'https://sketchfab.com/3d-models/low-poly-computer-desk-646ed84ecd9d40089c31d94f79334ca5',
+    author: 'Nyangire',
   },
   {
     name: 'Beach House 3D Model',
     url: 'https://skfb.ly/opUtZ',
     author: 'Unknown 3D',
+  },
+  {
+    name: 'Boat',
+    url: 'https://sketchfab.com/3d-models/boat-60891d2c56e4448b9c1379bd7cb2b0e8',
+    author: 'Arsen.Krityan',
+  },
+  {
+    name: 'cloud',
+    url: 'https://sketchfab.com/3d-models/cloud-fab0a880f9d64bd597651e0b1ef85bac',
+    author: 'Star Veb',
+  },
+  {
+    name: 'stylize clouds',
+    url: 'https://sketchfab.com/3d-models/stylize-clouds-32ed464f19fe4acf86723eaff08dd568',
+    author: 'ragad.sallabi',
   },
 ];
 
@@ -76,7 +92,7 @@ export default function CreditsPopup({
   // Responsive popup styles
   const getPopupStyles = (): React.CSSProperties => {
     const baseStyles: React.CSSProperties = {
-      backgroundColor: isDarkMode ? '#162542' : '#005E80',
+      backgroundColor: isDarkMode ? '#162542' : '#00445e',
       borderRadius: '15px',
       boxShadow: isDarkMode
         ? '0 25px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 255, 255, 0.1)'
@@ -151,7 +167,7 @@ export default function CreditsPopup({
     return {
       fontSize,
       fontWeight: '400',
-      color: 'rgba(255, 255, 255, 0.8)',
+      color: '#ffffff',
       marginBottom,
       textAlign: 'center' as const,
       lineHeight: '1.5',
@@ -200,7 +216,7 @@ export default function CreditsPopup({
       padding,
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
       borderRadius: '12px',
-      color: 'rgba(255, 255, 255, 0.9)',
+      color: '#ffffff',
       lineHeight: '1.5',
     };
   };

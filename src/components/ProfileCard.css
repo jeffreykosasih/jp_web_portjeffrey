@@ -303,3 +303,27 @@
 .pc-card-wrapper.active .pc-card {
   will-change: transform;
 }
+
+/* Compact card used inside the half-screen Profile drawer */
+.pc-card-wrapper.pc-compact {
+  max-width: 17rem;
+}
+.pc-card-wrapper.pc-compact .pc-card {
+  width: 100%;
+  height: 22rem;
+}
+@media (max-height: 30rem) {
+  /* Phones in landscape: shorter card so text and card fit side by side */
+  .pc-card-wrapper.pc-compact {
+    max-width: 12.5rem;
+  }
+  .pc-card-wrapper.pc-compact .pc-card {
+    height: 16rem;
+  }
+  .pc-card-wrapper.pc-compact .pc-content {
+    padding: var(--space-base);
+  }
+  .pc-card-wrapper.pc-compact .pc-header h3 {
+    font-size: var(--text-xl);
+  }
+}

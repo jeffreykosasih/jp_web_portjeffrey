@@ -4,6 +4,7 @@ import './index.css'; // Tailwind CSS
 import { motion, AnimatePresence } from 'framer-motion';
 
 import LazyScene from './components/LazyScene';
+import { PageNavContext, SubPage } from './components/PageSwitcher';
 import ThemeToggle from './components/ThemeToggle';
 import BurgerMenu from './components/BurgerMenu';
 import CreditsButton from './components/CreditsButton';
@@ -58,6 +59,10 @@ function App(): React.JSX.Element {
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(getInitialTheme());
   const [activePage, setActivePage] = useState<PageName | null>(null);
+  // The landmark the camera is zoomed to. It leads activePage: the camera
+  // flies in first, then the page's panel opens.
+  const [focusedPage, setFocusedPage] = useState<PageName | null>(null);
+  const pageOpenTimer = useRef<number | null>(null);
   const [isBurgerMenuOpen, setIsBurgerMenuOpen] = useState<boolean>(false);
   const [shouldAnimateBurgerMenu, setShouldAnimateBurgerMenu] =
     useState<boolean>(true);
@@ -105,11 +110,29 @@ function App(): React.JSX.Element {
 
   const openPage = (pageName: PageName): void => {
     setShouldAnimatePageText(true);
-    setActivePage(pageName === 'home' ? null : pageName);
+    if (pageOpenTimer.current) window.clearTimeout(pageOpenTimer.current);
+    const next = pageName === 'home' ? null : pageName;
+    setFocusedPage(next);
+    if (!next) {
+      setActivePage(null);
+      return;
+    }
+    // Close any open panel so the zoom to the new landmark is visible,
+    // then open the panel once the camera has mostly arrived.
+    setActivePage(null);
+    const reduceMotion = window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+    pageOpenTimer.current = window.setTimeout(
+      () => setActivePage(next),
+      reduceMotion ? 0 : 1000
+    );
   };
 
   const closePage = (): void => {
+    if (pageOpenTimer.current) window.clearTimeout(pageOpenTimer.current);
     setActivePage(null);
+    setFocusedPage(null);
   };
 
   const openBurgerMenu = (slideDirection: 'left' | 'right' = 'right'): void => {
@@ -187,14 +210,12 @@ function App(): React.JSX.Element {
       position: 'fixed' as const,
       fontFamily: 'Lato, sans-serif',
       fontWeight: '700' as const,
-      color: isDarkMode ? '#F8F6E3' : 'rgba(255, 255, 255, 0.9)',
+      // Deep teal on the light day sky, white on the night sky: both 7:1+
+      color: isDarkMode ? '#ffffff' : '#00334a',
       pointerEvents: 'none' as const,
       userSelect: 'none' as const,
       zIndex: 1000,
       letterSpacing: '-0.01em',
-      textShadow: isDarkMode
-        ? '0 2px 8px rgba(0, 0, 0, 0.3)'
-        : '0 2px 8px rgba(0, 0, 0, 0.2)',
     };
 
     // Enhanced mobile positioning with landscape mobile support
@@ -334,8 +355,9 @@ function App(): React.JSX.Element {
                 onPlayClickSound={playClickSound}
                 isBurgerMenuOpen={isBurgerMenuOpen}
                 triggerInitialZoom={triggerInitialZoom}
+                focusPage={focusedPage}
                 showHomeButtons={
-                  activePage === null &&
+                  focusedPage === null &&
                   !isBurgerMenuOpen &&
                   !isCreditsPopupVisible
                 }
@@ -426,7 +448,14 @@ function App(): React.JSX.Element {
                 </motion.div>
               </div>
 
-              {/* Page Components */}
+              {/* Page Components (they share the page switcher context) */}
+              <PageNavContext.Provider
+                value={{
+                  activePage: activePage as SubPage | null,
+                  openPage: (page) => openPage(page),
+                  onPlayClickSound: playClickSound,
+                }}
+              >
               <ProfilePage
                 isVisible={activePage === 'profile'}
                 onClose={closePage}
@@ -461,6 +490,7 @@ function App(): React.JSX.Element {
                 shouldAnimateText={shouldAnimatePageText}
                 deviceInfo={deviceInfo}
               />
+              </PageNavContext.Provider>
 
               {/* Credits Popup */}
               <MemoizedCreditsPopup

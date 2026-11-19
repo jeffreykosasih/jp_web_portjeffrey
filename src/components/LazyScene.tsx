@@ -63,6 +63,7 @@ interface LazySceneProps {
   triggerInitialZoom?: boolean;
   showHomeButtons?: boolean;
   homeButtonsIntroDelayMs?: number;
+  focusPage?: string | null;
 }
 
 // Simple loading fallback to prevent layout shift
@@ -110,6 +111,7 @@ export default function LazyScene({
   triggerInitialZoom,
   showHomeButtons,
   homeButtonsIntroDelayMs,
+  focusPage,
 }: LazySceneProps): React.JSX.Element {
   return (
     <SceneErrorBoundary>
@@ -126,6 +128,7 @@ export default function LazyScene({
           triggerInitialZoom={triggerInitialZoom}
           showHomeButtons={showHomeButtons}
           homeButtonsIntroDelayMs={homeButtonsIntroDelayMs}
+          focusPage={focusPage}
         />
       </Suspense>
     </SceneErrorBoundary>

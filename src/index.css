@@ -506,23 +506,59 @@ body {
 
 /* Bright placeholder for better visibility in ConnectPage form */
 .bright-placeholder::placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: #c9dbe2;
   opacity: 1; /* Firefox */
 }
 
 .bright-placeholder::-webkit-input-placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: #c9dbe2;
 }
 
 .bright-placeholder::-moz-placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: #c9dbe2;
   opacity: 1;
 }
 
 .bright-placeholder:-ms-input-placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: #c9dbe2;
 }
 
 .bright-placeholder::-ms-input-placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: #c9dbe2;
+}
+
+/* Welcome screen waves: each layer drifts at its own speed */
+.opening-wave {
+  animation: opening-wave-drift 14s linear infinite;
+}
+.opening-wave-1 {
+  animation-duration: 10s;
+  animation-direction: reverse;
+}
+.opening-wave-2 {
+  animation-duration: 7s;
+}
+@keyframes opening-wave-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opening-wave {
+    animation: none;
+  }
+}
+
+/* Drawer width on tablets: an even split in landscape, a little wider in
+   portrait so the content still has room (the camera matches both). */
+:root {
+  --drawer-tablet-width: 50vw;
+}
+@media (orientation: portrait) {
+  :root {
+    --drawer-tablet-width: 62vw;
+  }
 }

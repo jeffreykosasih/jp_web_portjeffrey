@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faArrowLeft,
   faMousePointer,
   faTimes,
 } from '@fortawesome/free-solid-svg-icons';
 import { DeviceInfo } from '../lib/types';
+import SideDrawer, { DrawerTitle } from './SideDrawer';
 import {
   getResponsiveValue,
   getSpacing,
@@ -179,7 +179,6 @@ export default function SkillsetPage({
   onPlayClickSound,
 }: SkillsetPageProps) {
   const [activeCategory, setActiveCategory] = useState<SkillCategory>('tools');
-  const [isButtonHovered, setIsButtonHovered] = React.useState(false);
   const [showAdobePopup, setShowAdobePopup] = useState(false);
 
   // Unified device type detection (following ProfilePage pattern)
@@ -203,6 +202,7 @@ export default function SkillsetPage({
 
   const deviceType = getDeviceType();
 
+
   // Responsive styling based on device (following ProfilePage pattern)
   const getContainerStyles = () => {
     const configs = {
@@ -218,22 +218,14 @@ export default function SkillsetPage({
         padding: 'var(--space-3xl) var(--space-xl)',
       },
       desktop: {
-        padding: 'var(--space-3xl)',
+        padding: 'var(--space-2xl) var(--space-xl)',
       },
     };
 
     return {
-      position: 'fixed' as const,
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      backgroundColor: isDarkMode
-        ? 'rgba(22, 37, 66, 0.4)'
-        : 'rgba(0, 94, 128, 0.5)',
-      backdropFilter: 'blur(0.5rem)',
-      opacity: 1,
-      zIndex: ResponsiveValues.zIndex.overlay,
+      position: 'relative' as const,
+      width: '100%',
+      height: '100%',
       display: 'flex',
       flexDirection: 'column' as const,
       // The content block grows to fill the panel, so start at the top and
@@ -283,46 +275,20 @@ export default function SkillsetPage({
 
   const getCategoryButtonStyles = (category: SkillCategory) => {
     const isActive = activeCategory === category;
-    const configs = {
-      'mobile-landscape': {
-        padding: 'var(--space-md) var(--space-xl)',
-        margin: '0 var(--space-sm)',
-        fontSize: 'var(--text-base)',
-      },
-      'mobile-portrait': {
-        padding: 'var(--space-md) var(--space-xl)',
-        margin: '0 var(--space-xs)',
-        fontSize: 'var(--text-sm)',
-      },
-      tablet: {
-        padding:
-          'calc(var(--space-md) + 0.1875rem) calc(var(--space-xl) + 0.375rem)',
-        margin: '0 var(--space-sm)',
-        fontSize: 'var(--text-base)',
-      },
-      desktop: {
-        padding:
-          'calc(var(--space-md) + 0.1875rem) calc(var(--space-xl) + 0.375rem)',
-        margin: '0 var(--space-sm)',
-        fontSize: 'var(--text-base)',
-      },
-    };
-
+    const isPhone =
+      deviceType === 'mobile-portrait' || deviceType === 'mobile-landscape';
     return {
-      borderRadius: 'var(--radius-lg)',
       border: 'none',
-      backgroundColor: isActive
-        ? 'rgba(255, 255, 255, 0.2)'
-        : 'rgba(255, 255, 255, 0.2)',
-      color: '#ffffff',
-      fontWeight: '600',
+      borderRadius: '999px',
+      minHeight: '2.5rem',
+      padding: isPhone ? '0.5rem 1rem' : '0.6rem 1.4rem',
+      backgroundColor: isActive ? '#ffffff' : 'transparent',
+      color: isActive ? (isDarkMode ? '#101c34' : '#00445e') : '#ffffff',
+      fontWeight: 700,
       fontFamily: 'Lato, sans-serif',
+      fontSize: isPhone ? '0.875rem' : '1rem',
       cursor: 'pointer',
-      transition: 'all 0.15s ease',
-      boxShadow: isActive
-        ? '0 0.25rem 0.9375rem rgba(255, 255, 255, 0.2)'
-        : 'none',
-      ...configs[deviceType],
+      transition: 'background-color 0.2s ease, color 0.2s ease',
     };
   };
 
@@ -350,152 +316,22 @@ export default function SkillsetPage({
       lineHeight: '1.6',
       fontFamily: 'Lato, sans-serif',
       fontWeight: '400',
-      color: 'rgba(255, 255, 255, 0.7)',
+      color: '#dbe7ec',
       textAlign: 'center' as const,
       marginTop: 'auto',
       ...configs[deviceType],
     };
   };
 
-  const renderLanguages = () => {
-    return (
-      <motion.div
-        key='languages'
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2, delay: 0.05 }}
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap:
-            deviceType === 'mobile-landscape'
-              ? 'var(--space-3xl)'
-              : deviceType === 'mobile-portrait'
-              ? 'calc(var(--space-xl) + 0.5625rem)'
-              : deviceType === 'tablet'
-              ? 'var(--space-4xl)'
-              : 'var(--space-4xl)',
-          padding:
-            deviceType === 'mobile-landscape'
-              ? 'calc(var(--space-xl) + 0.375rem)'
-              : deviceType === 'mobile-portrait'
-              ? 'var(--space-lg)'
-              : deviceType === 'tablet'
-              ? 'var(--space-3xl)'
-              : 'var(--space-3xl)',
-        }}
-      >
-        {skillsData.languages.map((skill, index) => (
-          <motion.div
-            key={skill.name}
-            initial={{ opacity: 0, y: 10, scale: 1 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{
-              duration: 0.3,
-              delay: 0.1 + index * 0.05,
-              ease: 'easeOut',
-            }}
-            whileHover={{
-              y: -12,
-              transition: { duration: 0.08, ease: 'easeOut' },
-            }}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              padding:
-                deviceType === 'mobile-landscape'
-                  ? 'calc(var(--space-2xl) + 0.1875rem) calc(var(--space-xl) + 0.0625rem)'
-                  : deviceType === 'mobile-portrait'
-                  ? 'calc(var(--space-xl) + 0.625rem) var(--space-lg)'
-                  : deviceType === 'tablet'
-                  ? 'var(--space-3xl) calc(var(--space-xl) + 0.625rem)'
-                  : 'var(--space-3xl) calc(var(--space-xl) + 0.625rem)',
-              borderRadius: 'var(--radius-lg)',
-              backgroundColor: isDarkMode
-                ? 'rgba(255, 255, 255, 0.15)'
-                : 'rgba(255, 255, 255, 0.15)',
-              cursor: 'pointer',
-              minWidth:
-                deviceType === 'mobile-landscape'
-                  ? '10rem'
-                  : deviceType === 'mobile-portrait'
-                  ? '8.75rem'
-                  : deviceType === 'tablet'
-                  ? '11.25rem'
-                  : '11.25rem',
-            }}
-          >
-            <div
-              style={{
-                fontSize:
-                  deviceType === 'mobile-landscape'
-                    ? 'calc(var(--text-6xl) + 0.625rem)'
-                    : deviceType === 'mobile-portrait'
-                    ? 'calc(var(--text-5xl) + 0.75rem)'
-                    : deviceType === 'tablet'
-                    ? 'calc(var(--text-6xl) + 1.25rem)'
-                    : 'calc(var(--text-6xl) + 1.25rem)',
-                marginBottom: 'var(--space-lg)',
-              }}
-            >
-              {skill.icon}
-            </div>
-            <h4
-              style={{
-                fontSize:
-                  deviceType === 'mobile-landscape'
-                    ? 'var(--text-xl)'
-                    : deviceType === 'mobile-portrait'
-                    ? 'var(--text-base)'
-                    : deviceType === 'tablet'
-                    ? 'var(--text-2xl)'
-                    : 'var(--text-2xl)',
-                fontWeight: '700',
-                fontFamily: 'Lato, sans-serif',
-                marginBottom:
-                  deviceType === 'mobile-landscape'
-                    ? 'var(--space-sm)'
-                    : deviceType === 'mobile-portrait'
-                    ? 'var(--space-xs)'
-                    : deviceType === 'tablet'
-                    ? 'var(--space-sm)'
-                    : 'var(--space-sm)',
-                color: '#ffffff',
-                textAlign: 'center',
-              }}
-            >
-              {skill.name}
-            </h4>
-            <p
-              style={{
-                fontSize:
-                  deviceType === 'mobile-landscape'
-                    ? 'var(--text-sm)'
-                    : deviceType === 'mobile-portrait'
-                    ? 'calc(var(--text-sm) - 0.05rem)'
-                    : deviceType === 'tablet'
-                    ? 'var(--text-base)'
-                    : 'var(--text-base)',
-                fontFamily: 'Lato, sans-serif',
-                fontWeight: '400',
-                color: 'rgba(255, 255, 255, 0.8)',
-                textAlign: 'center',
-                margin: 0,
-                lineHeight: '1.3',
-              }}
-            >
-              {skill.description}
-            </p>
-          </motion.div>
-        ))}
-      </motion.div>
-    );
-  };
-
   const renderSkillsGrid = () => {
     const skills = skillsData[activeCategory];
+    const isPhoneCard =
+      deviceType === 'mobile-landscape' || deviceType === 'mobile-portrait';
+    const cardMaxWidth = isPhoneCard ? '8.75rem' : '11.25rem';
+    const cols = deviceType === 'mobile-portrait' ? 2 : 3;
+    const cardGap = isPhoneCard ? '0.875rem' : '1.25rem';
+    const cardWidth = `calc((100% - ${cols - 1} * ${cardGap}) / ${cols})`;
+    const cardMinHeight = isPhoneCard ? '8.5rem' : '10.5rem';
     const showMoreButton = activeCategory === 'tools';
 
     return (
@@ -505,42 +341,14 @@ export default function SkillsetPage({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2, delay: 0.05 }}
         style={{
-          display: 'grid',
-          gridTemplateColumns:
-            deviceType === 'mobile-landscape'
-              ? 'repeat(3, 1fr)'
-              : deviceType === 'mobile-portrait'
-              ? 'repeat(2, 1fr)'
-              : deviceType === 'tablet'
-              ? 'repeat(3, 1fr)'
-              : 'repeat(3, 1fr)',
-          gridTemplateRows:
-            deviceType === 'mobile-landscape'
-              ? 'repeat(2, 1fr)'
-              : deviceType === 'mobile-portrait'
-              ? 'auto'
-              : deviceType === 'tablet'
-              ? 'auto'
-              : 'auto',
-          gap:
-            deviceType === 'mobile-landscape'
-              ? 'var(--space-lg)'
-              : deviceType === 'mobile-portrait'
-              ? 'var(--space-base)'
-              : deviceType === 'tablet'
-              ? 'calc(var(--space-xl) + 0.625rem)'
-              : 'calc(var(--space-xl) + 0.625rem)',
+          // Wrapping row, centred, so tabs with fewer cards stay balanced
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: cardGap,
           width: '100%',
-          maxWidth:
-            deviceType === 'mobile-landscape'
-              ? '31.25rem'
-              : deviceType === 'mobile-portrait'
-              ? '23.75rem'
-              : deviceType === 'tablet'
-              ? '37.5rem'
-              : '37.5rem',
-          justifyItems: 'center',
-          alignContent: 'center',
+          maxWidth: '37.5rem',
+          margin: '0 auto',
         }}
       >
         {skills.map((skill, index) => (
@@ -570,27 +378,13 @@ export default function SkillsetPage({
                   ? 'calc(var(--space-xl) + 0.75rem) var(--space-lg)'
                   : 'calc(var(--space-xl) + 0.75rem) var(--space-lg)',
               borderRadius: 'var(--radius-lg)',
-              backgroundColor: isDarkMode
-                ? 'rgba(255, 255, 255, 0.1)'
-                : 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(0, 0, 0, 0.2)', // dark tint keeps white text above 7:1
+                border: '1px solid rgba(255, 255, 255, 0.22)',
               cursor: 'pointer',
-              width: '100%',
-              maxWidth:
-                deviceType === 'mobile-landscape'
-                  ? '8.75rem'
-                  : deviceType === 'mobile-portrait'
-                  ? '8.75rem'
-                  : deviceType === 'tablet'
-                  ? '11.25rem'
-                  : '11.25rem',
-              minHeight:
-                deviceType === 'mobile-landscape'
-                  ? '7.5rem'
-                  : deviceType === 'mobile-portrait'
-                  ? '7.5rem'
-                  : deviceType === 'tablet'
-                  ? '10rem'
-                  : '10rem',
+              width: cardWidth,
+              maxWidth: cardMaxWidth,
+              minHeight: cardMinHeight,
+              boxSizing: 'border-box',
             }}
           >
             <div
@@ -612,7 +406,11 @@ export default function SkillsetPage({
                     ? 'calc(var(--space-4xl) - 0.25rem)'
                     : 'calc(var(--space-4xl) - 0.25rem)',
                 borderRadius: 'var(--radius-lg)',
-                backgroundColor: skill.color,
+                // flags sit on a neutral tile; brand icons on their colour
+                backgroundColor:
+                  typeof skill.icon === 'string'
+                    ? 'rgba(255, 255, 255, 0.14)'
+                    : skill.color,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -626,7 +424,20 @@ export default function SkillsetPage({
                     : 'calc(var(--space-md) + 0.125rem)',
               }}
             >
-              {typeof skill.icon === 'object' ? (
+              {typeof skill.icon === 'string' ? (
+                <span
+                  aria-hidden='true'
+                  style={{
+                    fontSize:
+                      deviceType === 'mobile-portrait' || deviceType === 'mobile-landscape'
+                        ? '1.6rem'
+                        : '1.9rem',
+                    lineHeight: 1,
+                  }}
+                >
+                  {skill.icon}
+                </span>
+              ) : typeof skill.icon === 'object' ? (
                 <FontAwesomeIcon
                   icon={skill.icon}
                   style={{
@@ -695,7 +506,7 @@ export default function SkillsetPage({
                     : 'calc(var(--text-sm) - 0.05rem)',
                 fontFamily: 'Lato, sans-serif',
                 fontWeight: '400',
-                color: 'rgba(255, 255, 255, 0.8)',
+                color: '#dbe7ec',
                 textAlign: 'center',
                 margin: 0,
                 lineHeight: '1.3',
@@ -727,16 +538,15 @@ export default function SkillsetPage({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: deviceInfo?.isMobile ? '20px 12px' : '28px 20px',
+              padding: '1rem 0.75rem',
               borderRadius: 'var(--radius-lg)',
-              backgroundColor: isDarkMode
-                ? 'rgba(255, 255, 255, 0.1)'
-                : 'rgba(255, 255, 255, 0.05)',
+              backgroundColor: 'rgba(0, 0, 0, 0.2)',
               cursor: 'pointer',
-              width: '100%',
-              maxWidth: deviceInfo?.isMobile ? '160px' : '180px',
-              minHeight: deviceInfo?.isMobile ? '140px' : '160px',
-              border: '2px dashed rgba(255, 255, 255, 0.3)',
+              width: cardWidth,
+              maxWidth: cardMaxWidth,
+              minHeight: cardMinHeight,
+              border: '1px dashed rgba(255, 255, 255, 0.45)',
+              boxSizing: 'border-box',
               fontFamily: 'inherit',
               color: '#ffffff',
             }}
@@ -744,7 +554,7 @@ export default function SkillsetPage({
             <div
               style={{
                 fontSize: deviceInfo?.isMobile ? '2rem' : '2.5rem',
-                color: 'rgba(255, 255, 255, 0.6)',
+                color: '#dbe7ec',
                 fontWeight: 'bold',
                 letterSpacing: '0.2em',
               }}
@@ -756,7 +566,7 @@ export default function SkillsetPage({
                 fontSize: deviceInfo?.isMobile ? '0.7rem' : '0.8rem',
                 fontFamily: 'Lato, sans-serif',
                 fontWeight: '400',
-                color: 'rgba(255, 255, 255, 0.6)',
+                color: '#dbe7ec',
                 textAlign: 'center',
                 margin: 0,
                 marginTop: '10px',
@@ -927,7 +737,7 @@ export default function SkillsetPage({
                         fontSize: '0.8rem',
                         fontFamily: 'Lato, sans-serif',
                         fontWeight: '400',
-                        color: 'rgba(255, 255, 255, 0.8)',
+                        color: '#dbe7ec',
                         textAlign: 'center',
                         margin: 0,
                         lineHeight: '1.3',
@@ -945,7 +755,7 @@ export default function SkillsetPage({
                   fontSize: deviceInfo?.isMobile ? '0.8rem' : '0.9rem',
                   fontFamily: 'Lato, sans-serif',
                   fontWeight: '400',
-                  color: 'rgba(255, 255, 255, 0.6)',
+                  color: '#dbe7ec',
                   textAlign: 'center',
                   margin: 0,
                   marginTop: '25px',
@@ -962,74 +772,15 @@ export default function SkillsetPage({
   };
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
-          style={getContainerStyles()}
-        >
-          {/* Back button with slide left to right effect */}
-          <motion.button
-            onClick={() => {
-              onPlayClickSound?.(); // Play click sound
-              onClose(); // Close current page
-              onOpenBurgerMenu('right'); // Open burger menu sliding from right corner
-            }}
-            aria-label='Back to menu'
-            initial={{ x: 20 }}
-            animate={{ x: 0 }}
-            whileHover={{ x: -5 }}
-            transition={{ duration: 0.3 }}
-            style={{
-              borderRadius: '50%',
-              position: 'absolute',
-              top:
-                deviceType === 'mobile-landscape'
-                  ? 'max(env(safe-area-inset-top), var(--space-sm))'
-                  : deviceType === 'mobile-portrait'
-                  ? 'max(env(safe-area-inset-top), var(--space-base))'
-                  : 'var(--space-lg)',
-              right:
-                deviceType === 'mobile-landscape'
-                  ? 'var(--space-md)'
-                  : deviceType === 'mobile-portrait'
-                  ? 'var(--space-base)'
-                  : 'var(--space-lg)',
-              zIndex: 1001,
-              width:
-                deviceType === 'mobile-landscape'
-                  ? 'var(--touch-target-sm)'
-                  : deviceType === 'mobile-portrait'
-                  ? 'var(--touch-target-md)'
-                  : 'var(--touch-target-lg)',
-              height:
-                deviceType === 'mobile-landscape'
-                  ? 'var(--touch-target-sm)'
-                  : deviceType === 'mobile-portrait'
-                  ? 'var(--touch-target-md)'
-                  : 'var(--touch-target-lg)',
-              border: 'none',
-              backgroundColor: isDarkMode ? '#162542' : '#005E80',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={() => setIsButtonHovered(true)}
-            onMouseLeave={() => setIsButtonHovered(false)}
-          >
-            <FontAwesomeIcon
-              icon={faArrowLeft}
-              style={{
-                color: '#ffffff',
-                fontSize: '20px',
-              }}
-            />
-          </motion.button>
+    <SideDrawer
+      isVisible={isVisible}
+      onClose={onClose}
+      isDarkMode={isDarkMode}
+      deviceInfo={deviceInfo}
+      label='Skills'
+      align='top'
+      onPlayClickSound={onPlayClickSound}
+    >
 
           {/* Content with fade in */}
           <motion.div
@@ -1044,58 +795,36 @@ export default function SkillsetPage({
             }
             style={{
               width: '100%',
-              maxWidth: '1200px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              flex: 1,
             }}
           >
-            {/* Title */}
-            <h1
-              style={{
-                fontSize: deviceInfo?.isMobile
-                  ? deviceInfo?.orientation === 'landscape'
-                    ? '1.3rem'
-                    : '2.2rem'
-                  : deviceInfo?.isTablet
-                  ? '2.5rem'
-                  : '3rem',
-                fontWeight: '900',
-                fontFamily: 'Lato, sans-serif',
-                marginBottom: deviceInfo?.isMobile
-                  ? deviceInfo?.orientation === 'landscape'
-                    ? '6px'
-                    : '16px'
-                  : deviceInfo?.isTablet
-                  ? '20px'
-                  : '25px',
-                marginTop: deviceInfo?.isMobile ? '0' : '20px',
-                background: 'linear-gradient(45deg, #ffffff, #e2e8f0)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                color: 'transparent',
-                letterSpacing: '-0.02em',
-                textAlign: 'center',
-              }}
-            >
-              Skills
-            </h1>
+            <DrawerTitle
+              title='Skills'
+              subtitle='The tools, code and languages I work with.'
+              deviceInfo={deviceInfo}
+            />
 
             {/* Category buttons */}
             <div
+              role='tablist'
+              aria-label='Skill type'
               style={{
                 display: 'flex',
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-                marginBottom: deviceInfo?.isMobile ? '30px' : '40px',
+                gap: '0.25rem',
+                padding: '0.25rem',
+                borderRadius: '999px',
+                backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                marginBottom: deviceType === 'mobile-landscape' ? '1rem' : '1.75rem',
               }}
             >
               {(Object.keys(skillsData) as SkillCategory[]).map((category) => (
                 <motion.button
                   key={category}
                   onClick={() => setActiveCategory(category)}
-                  aria-pressed={activeCategory === category}
+                  role='tab'
+                  aria-selected={activeCategory === category}
                   style={getCategoryButtonStyles(category)}
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
@@ -1108,29 +837,12 @@ export default function SkillsetPage({
             </div>
 
             {/* Skills content */}
-            {activeCategory === 'languages'
-              ? renderLanguages()
-              : renderSkillsGrid()}
+            {renderSkillsGrid()}
           </motion.div>
 
-          {/* Footer description */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-            style={getFooterStyles()}
-          >
-            {activeCategory === 'tools'
-              ? 'Tools that I use for task management, design, and development.'
-              : activeCategory === 'programming'
-              ? 'What I’ve learned so far. Not the full list.'
-              : 'Shout-out to Mr. Vance, my private tutor. He’s the reason I enjoy learning English so much.'}
-          </motion.div>
 
           {/* Adobe Popup */}
           {renderAdobePopup()}
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </SideDrawer>
   );
 }

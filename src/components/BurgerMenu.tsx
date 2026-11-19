@@ -269,9 +269,10 @@ export default function BurgerMenu({
       top: 0,
       right: 0,
       height: '100dvh',
+      // Same deep panels as the drawers: white text stays above 7:1
       background: isDarkMode
-        ? 'rgba(22, 37, 66, 0.94)'
-        : 'rgba(0, 94, 128, 0.94)',
+        ? 'rgba(16, 28, 52, 0.95)'
+        : 'rgba(0, 68, 94, 0.95)',
       zIndex: 9999,
       transform: 'translateZ(0)',
       backfaceVisibility: 'hidden' as const,
@@ -395,7 +396,7 @@ export default function BurgerMenu({
       fontWeight: '900',
       fontFamily: 'Lato, sans-serif',
       letterSpacing: '0.02em',
-      color: isDarkMode ? '#162542' : '#005E80',
+      color: isDarkMode ? '#162542' : '#00445e',
       textAlign: 'center' as const,
       borderRadius: 'calc(var(--radius-sm) + 0.0625rem)',
       border: 'none',
@@ -435,11 +436,11 @@ export default function BurgerMenu({
     { name: 'Port Jeffrey', key: 'home' as PageName },
     { name: 'Profile', key: 'profile' as PageName },
     { name: 'Skillset', key: 'skillset' as PageName },
-    { name: 'Portfolio', key: 'portfolio' as PageName },
+    { name: 'Projects', key: 'portfolio' as PageName },
   ];
 
   const outboundLinks = [
-    { key: 'resume', label: 'Résumé (PDF) ↗', href: LINKS.resume },
+    { key: 'resume', label: 'Resume', href: LINKS.resume },
   ];
 
   const iconColor = isHovered
