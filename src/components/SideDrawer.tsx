@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { DeviceInfo } from '../lib/types';
 import { ResponsiveValues } from '../lib/responsiveUtils';
-import PageSwitcher from './PageSwitcher';
 
 // Every page opens as a drawer from one side, so the landmark the camera
 // zoomed to stays in view on the other. A tab on the drawer's edge closes it.
@@ -58,16 +57,28 @@ const DRAWER_WIDTH: Record<DrawerDevice, string> = {
 const DRAWER_PADDING: Record<DrawerDevice, string> = {
   'mobile-landscape':
     'max(env(safe-area-inset-top), 1rem) 1.25rem max(env(safe-area-inset-bottom), 1rem)',
+  // bottom: room for the band of buttons along the bottom of the drawer
   'mobile-portrait':
-    'max(env(safe-area-inset-top), 4.5rem) 1.25rem max(env(safe-area-inset-bottom), 2rem)',
+    'max(env(safe-area-inset-top), 4.5rem) 1.25rem calc(5.5rem + env(safe-area-inset-bottom))',
   tablet: '4.5rem 2.5rem 3rem',
   desktop: '4.5rem 3rem 3rem',
+};
+
+// True while switching pages under a fade: the drawer appears and leaves
+// in place instead of sliding
+export const DrawerInstantContext = React.createContext(false);
+
+// Text and accent colours for everything inside a drawer, as CSS variables:
+// bright mode is blue and white, dark mode is navy and yellow
+export const DRAWER_INK = {
+  light: { ink: '#ffffff', muted: '#dbe7ec', accent: '#ffffff', line: 'rgba(255, 255, 255, 0.7)' },
+  dark: { ink: '#fff1cc', muted: '#ecdcae', accent: '#ffd36b', line: 'rgba(255, 211, 107, 0.75)' },
 };
 
 // Deep, near-opaque panels so white text stays above 7:1 (WCAG AAA)
 // whatever bright scene is behind it
 export const DRAWER_COLORS = {
-  light: { panel: 'rgba(0, 68, 94, 0.95)', tab: '#00445e' },
+  light: { panel: 'rgba(11, 58, 115, 0.95)', tab: '#0b3a73' },
   dark: { panel: 'rgba(16, 28, 52, 0.95)', tab: '#101c34' },
 };
 
@@ -92,7 +103,7 @@ export function DrawerTitle({
           fontWeight: 900,
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
-          color: '#ffffff',
+          color: 'var(--ui-accent)',
           fontSize: compact
             ? '1.75rem'
             : device === 'mobile-portrait'
@@ -109,7 +120,7 @@ export function DrawerTitle({
             fontFamily: 'Lato, sans-serif',
             fontSize: compact ? '0.9rem' : '1rem',
             lineHeight: 1.5,
-            color: '#e8f1f5',
+            color: 'var(--ui-ink-muted)',
           }}
         >
           {subtitle}
@@ -133,8 +144,17 @@ export default function SideDrawer({
 }: SideDrawerProps) {
   const isLeft = side === 'left';
   const offscreen = isLeft ? '-100%' : '100%';
+  const instant = React.useContext(DrawerInstantContext);
   const device = getDrawerDevice(deviceInfo);
   const { panel, tab } = isDarkMode ? DRAWER_COLORS.dark : DRAWER_COLORS.light;
+  const ink = isDarkMode ? DRAWER_INK.dark : DRAWER_INK.light;
+  const inkVars = {
+    '--ui-ink': ink.ink,
+    '--ui-ink-muted': ink.muted,
+    '--ui-accent': ink.accent,
+    '--ui-on-accent': isDarkMode ? '#101c34' : '#0b3a73',
+    '--ui-line': ink.line,
+  } as React.CSSProperties;
 
   return (
     <AnimatePresence>
@@ -142,9 +162,9 @@ export default function SideDrawer({
         <motion.aside
           key={`${label}-drawer`}
           aria-label={label}
-          initial={{ x: offscreen }}
+          initial={instant ? { x: 0 } : { x: offscreen }}
           animate={{ x: 0 }}
-          exit={{ x: offscreen }}
+          exit={instant ? { opacity: 0, transition: { duration: 0 } } : { x: offscreen }}
           transition={{ type: 'tween', duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           style={{
             position: 'fixed',
@@ -157,7 +177,8 @@ export default function SideDrawer({
             backdropFilter: 'blur(0.75rem)',
             WebkitBackdropFilter: 'blur(0.75rem)',
             boxShadow: `${isLeft ? '' : '-'}0.5rem 0 2rem rgba(0, 0, 0, 0.25)`,
-            color: '#ffffff',
+            ...inkVars,
+            color: 'var(--ui-ink)',
             display: 'flex',
             flexDirection: 'column',
           }}
@@ -186,7 +207,7 @@ export default function SideDrawer({
                 ? '0 var(--radius-lg) var(--radius-lg) 0'
                 : 'var(--radius-lg) 0 0 var(--radius-lg)',
               backgroundColor: tab,
-              color: '#ffffff',
+              color: 'var(--ui-accent)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -226,19 +247,6 @@ export default function SideDrawer({
             >
               {children}
             </div>
-          </div>
-          {/* Jump to another page without going back to the island */}
-          <div
-            style={{
-              flex: 'none',
-              padding:
-                device === 'mobile-landscape'
-                  ? '0.5rem 1rem max(env(safe-area-inset-bottom), 0.5rem)'
-                  : '0.9rem 1rem max(env(safe-area-inset-bottom), 1.1rem)',
-              borderTop: '1px solid rgba(255, 255, 255, 0.18)',
-            }}
-          >
-            <PageSwitcher isDarkMode={isDarkMode} />
           </div>
         </motion.aside>
       )}

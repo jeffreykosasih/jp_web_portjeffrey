@@ -161,7 +161,8 @@ export default function BurgerMenu({
     } else if (menuIsOpen) {
       setWasOpenBehindPage(true);
       setMenuIsOpen(false);
-      onHideThemeToggle?.(true);
+      // Pages are side drawers now, so the theme toggle stays available
+      onHideThemeToggle?.(false);
     } else {
       setMenuIsOpen(false);
       onHideThemeToggle?.(false);
@@ -206,8 +207,8 @@ export default function BurgerMenu({
 
     const hoverStyles = isHovered
       ? {
-          backgroundColor: '#ffffff',
-          color: isDarkMode ? '#162542' : '#005E80',
+          backgroundColor: isDarkMode ? '#ffd36b' : '#ffffff',
+          color: isDarkMode ? '#162542' : '#12508f',
         }
       : {};
 
@@ -215,8 +216,8 @@ export default function BurgerMenu({
       position: 'fixed' as const,
       borderRadius: '50%',
       border: 'none',
-      backgroundColor: isDarkMode ? '#162542' : '#005E80',
-      color: '#ffffff',
+      backgroundColor: isDarkMode ? '#162542' : '#12508f',
+      color: isDarkMode ? '#ffd36b' : '#ffffff',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -272,7 +273,7 @@ export default function BurgerMenu({
       // Same deep panels as the drawers: white text stays above 7:1
       background: isDarkMode
         ? 'rgba(16, 28, 52, 0.95)'
-        : 'rgba(0, 68, 94, 0.95)',
+        : 'rgba(11, 58, 115, 0.95)',
       zIndex: 9999,
       transform: 'translateZ(0)',
       backfaceVisibility: 'hidden' as const,
@@ -312,7 +313,7 @@ export default function BurgerMenu({
     return {
       background: 'transparent',
       border: 'none',
-      color: shouldHighlight ? '#FFEEA9' : '#ffffff',
+      color: shouldHighlight ? '#FFEEA9' : isDarkMode ? '#fff1cc' : '#ffffff',
       fontWeight: '900',
       fontFamily: 'Lato, sans-serif',
       cursor: 'pointer',
@@ -396,11 +397,11 @@ export default function BurgerMenu({
       fontWeight: '900',
       fontFamily: 'Lato, sans-serif',
       letterSpacing: '0.02em',
-      color: isDarkMode ? '#162542' : '#00445e',
+      color: isDarkMode ? '#162542' : '#0b3a73',
       textAlign: 'center' as const,
       borderRadius: 'calc(var(--radius-sm) + 0.0625rem)',
       border: 'none',
-      background: '#FAF1E6',
+      background: isDarkMode ? '#ffd36b' : '#FAF1E6',
       transition: 'all 0.3s ease',
       overflow: 'hidden',
       display: 'flex',
@@ -422,7 +423,7 @@ export default function BurgerMenu({
 
     return {
       display: 'inline-block',
-      color: hoveredOutbound === key ? '#FFEEA9' : 'rgba(255, 255, 255, 0.85)',
+      color: hoveredOutbound === key ? '#FFEEA9' : isDarkMode ? '#ecdcae' : 'rgba(255, 255, 255, 0.85)',
       fontWeight: '700',
       fontFamily: 'Lato, sans-serif',
       textDecoration: 'none',
@@ -435,18 +436,22 @@ export default function BurgerMenu({
   const menuItems = [
     { name: 'Port Jeffrey', key: 'home' as PageName },
     { name: 'Profile', key: 'profile' as PageName },
-    { name: 'Skillset', key: 'skillset' as PageName },
+    // Same order as the page buttons: Profile, then the island left to right
     { name: 'Projects', key: 'portfolio' as PageName },
+    { name: 'Skillset', key: 'skillset' as PageName },
   ];
 
   const outboundLinks = [
     { key: 'resume', label: 'Resume', href: LINKS.resume },
   ];
 
+  // Navy and yellow at night, blue and white by day
   const iconColor = isHovered
     ? isDarkMode
       ? '#162542'
-      : '#005E80'
+      : '#12508f'
+    : isDarkMode
+    ? '#ffd36b'
     : '#ffffff';
 
   return (

@@ -64,7 +64,7 @@ export default function ProfilePage({
               fontFamily: 'Lato, sans-serif',
               fontSize: sideBySide ? '1rem' : device === 'mobile-portrait' ? '1.0625rem' : '1.25rem',
               lineHeight: 1.6,
-              color: '#ffffff',
+              color: 'var(--ui-ink)',
               textAlign: 'center',
               maxWidth: '30rem',
               marginInline: 'auto',

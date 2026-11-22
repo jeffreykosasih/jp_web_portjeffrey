@@ -22,7 +22,7 @@ const TRANSITION_DURATION = 1200; // 1.2 seconds for fade out/in
 function OpeningWaves({ isDarkMode }: { isDarkMode: boolean }) {
   const layers = isDarkMode
     ? ['#1c2f55', '#22396a', '#2b467c']
-    : ['#0b6a90', '#1782ac', '#2394bf'];
+    : ['#1a5fa6', '#2b77c0', '#3f91d8'];
   const wave =
     'M0,60 C120,22 240,22 360,60 C480,98 600,98 720,60 C840,22 960,22 1080,60 C1200,98 1320,98 1440,60 L1440,120 L0,120 Z';
   return (
@@ -73,9 +73,9 @@ export default function AppLoadingScreen({
 
   // Theme colors
   const colors = {
-    background: isDarkMode ? '#162542' : '#005E80',
-    text: isDarkMode ? '#e8e682' : '#ffffff',
-    dots: isDarkMode ? '#e8e682' : '#ffffff',
+    background: isDarkMode ? '#162542' : '#12508f',
+    text: isDarkMode ? '#ffd36b' : '#ffffff',
+    dots: isDarkMode ? '#ffd36b' : '#ffffff',
     transition: isDarkMode ? '#000000' : '#ffffff',
   };
 
@@ -190,7 +190,7 @@ export default function AppLoadingScreen({
       fontWeight: 600,
       borderRadius: 'var(--radius-full)',
       backgroundColor: isDarkMode ? colors.text : '#ffffff',
-      color: isDarkMode ? '#162542' : '#005E80',
+      color: isDarkMode ? '#162542' : '#12508f',
       border: 'none',
       boxShadow: isDarkMode
         ? '0 0.5rem 1.25rem rgba(232, 230, 130, 0.3)'

@@ -23,85 +23,52 @@ interface ObjectPopupMenuProps {
   highlightedObject?: string | null;
 }
 
-// Unified positioning system for consistent popup placement
-const getPopupPosition = (objectType: ObjectType, isMobile: boolean) => {
-  // Base offset distances - consistent across all objects
-  const baseOffset = {
-    mobile: { x: 60, y: 70 },
-    desktop: { x: 80, y: 90 },
-  };
-
-  const offset = isMobile ? baseOffset.mobile : baseOffset.desktop;
-
-  // Position strategy: each object gets a consistent relative position
-  // This creates a predictable, maintainable positioning system
-  const positionMap = {
-    twochairs: { direction: 'top-right', x: offset.x, y: -offset.y },
-    house: { direction: 'top-left', x: -offset.x, y: -offset.y },
-    stonehead: { direction: 'top-center', x: 0, y: -offset.y },
-    surfboard: { direction: 'bottom-left', x: -offset.x, y: offset.y / 2 },
-  };
-
-  return (
-    positionMap[objectType as keyof typeof positionMap] || {
-      x: 0,
-      y: -offset.y,
-    }
-  );
-};
-
 const getObjectConfig = (
   objectType: ObjectType,
   isDarkMode: boolean,
   isMobile: boolean
 ) => {
-  // Get unified position for this object
-  const position = getPopupPosition(objectType, isMobile);
-
   const configs = {
     twochairs: {
       title: 'Connect',
       page: 'connect' as PageName,
       icon: faEnvelope,
-      // On phones the chairs sit near the right edge, so the label goes
-      // lower and further left to stay clear of Skillset
-      position: isMobile ? { left: -120, top: -110 } : { left: -50, top: -200 },
+      row: 'back' as const,
     },
     house: {
       title: 'Projects',
       page: 'portfolio' as PageName,
       icon: faBriefcase,
-      position: { left: position.x, top: -250 },
+      row: 'back' as const,
     },
     stonehead: {
       title: 'Profile',
       page: 'profile' as PageName,
       icon: faUser,
-      // The dog is small, so its label sits closer above it
-      position: { left: -60, top: -150 },
+      row: 'front' as const,
     },
     surfboard: {
       title: 'Skillset',
       page: 'skillset' as PageName,
       icon: faCogs,
-      position: { left: -80, top: -150 },
+      row: 'back' as const,
     },
   };
 
   const theme = isDarkMode
     ? {
         baseBackground: '#162542', // same navy as the corner buttons
-        hoverBackground: '#ffffff',
-        textColor: '#f8fbff',
+        hoverBackground: '#ffd36b', // night accent: navy and yellow
+        textColor: '#ffd36b',
         hoverTextColor: '#162542',
         shadowColor: 'rgba(3, 10, 22, 0.45)',
       }
     : {
-        baseBackground: 'rgba(0, 68, 94, 0.95)', // 9:1 with white text
+        baseBackground: 'rgba(11, 58, 115, 0.95)', // 9:1 with white text
         hoverBackground: '#ffffff',
         textColor: '#ffffff',
-        hoverTextColor: '#005E80',
-        shadowColor: 'rgba(0, 94, 128, 0.18)',
+        hoverTextColor: '#12508f',
+        shadowColor: 'rgba(18, 80, 143, 0.18)',
       };
 
   return {
@@ -122,12 +89,15 @@ const ObjectPopupMenu: React.FC<ObjectPopupMenuProps> = ({
 }) => {
   const isMobile = deviceInfo?.isMobile || deviceInfo?.isLandscapeMobile;
   const [hoveredButton, setHoveredButton] = useState<ObjectType | null>(null);
+  // Bumped on click so the ring pulse replays
+  const [pulse, setPulse] = useState<Record<string, number>>({});
   const [shouldRenderButtons, setShouldRenderButtons] = useState(false);
   const buttonOrder: ObjectType[] = ['stonehead', 'house', 'surfboard', 'twochairs'];
 
   useEffect(() => {
     if (!isVisible) {
       setHoveredButton(null);
+      setPulse({}); // labels come back clean, without a ring
       onHoverObject?.(null);
       setShouldRenderButtons(false);
       return;
@@ -156,17 +126,20 @@ const ObjectPopupMenu: React.FC<ObjectPopupMenuProps> = ({
           // Keep every label fully on screen (estimated label width)
           const estWidth = config.title.length * (isMobile ? 8.5 : 10) + (isMobile ? 58 : 76);
           const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
+          // Each label is centred on its landmark: back-row labels sit just
+          // above the object, front-row labels just below it, so each side of
+          // the island reads as one tidy column. Labels always stay on screen.
+          const labelHeight = isMobile ? 40 : 54;
           const left = Math.min(
-            Math.max(objectPosition[0] + config.position.left, 8),
+            Math.max(objectPosition[0] - estWidth / 2, 8),
             viewportWidth - estWidth - 8
           );
-          // Landscape phones show a smaller island, so labels sit closer to it;
-          // every label stays below the name badge and above the bottom buttons
           const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-          const yScale = deviceInfo?.isLandscapeMobile ? 0.5 : 1;
           const top = Math.min(
             Math.max(
-              objectPosition[1] + config.position.top * yScale + (isMobile ? 24 : 0),
+              config.row === 'back'
+                ? objectPosition[1] - labelHeight - 10
+                : objectPosition[1] + 10,
               56
             ),
             viewportHeight - 110
@@ -201,7 +174,10 @@ const ObjectPopupMenu: React.FC<ObjectPopupMenuProps> = ({
                 setHoveredButton(null);
                 onHoverObject?.(null);
               }}
-              onClick={() => onNavigate?.(config.page)}
+              onClick={() => {
+                setPulse((n) => ({ ...n, [objectType]: (n[objectType] ?? 0) + 1 }));
+                onNavigate?.(config.page);
+              }}
               style={{
                 position: 'fixed',
                 left,
@@ -218,8 +194,9 @@ const ObjectPopupMenu: React.FC<ObjectPopupMenuProps> = ({
                   ? config.hoverBackground
                   : config.baseBackground,
                 color: isHovered ? config.hoverTextColor : config.textColor,
+                // Thick ring on hover: warm yellow at night, white by day
                 boxShadow: isHovered
-                  ? `0 14px 32px ${config.shadowColor}`
+                  ? `0 0 0 4px ${isDarkMode ? '#ffd36b' : '#ffffff'}, 0 14px 32px ${config.shadowColor}`
                   : `0 10px 28px ${config.shadowColor}`,
                 backdropFilter: 'blur(12px)',
                 cursor: 'pointer',
@@ -228,6 +205,23 @@ const ObjectPopupMenu: React.FC<ObjectPopupMenuProps> = ({
                   'background-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease',
               }}
             >
+              {/* Ring pulse on click only */}
+              {(pulse[objectType] ?? 0) > 0 && (
+              <motion.span
+                key={`pulse-${objectType}-${pulse[objectType] ?? 0}`}
+                aria-hidden='true'
+                initial={{ scale: 1, opacity: 0.9 }}
+                animate={{ scale: 1.25, opacity: 0 }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '16px',
+                  border: `4px solid ${isDarkMode ? '#ffd36b' : '#ffffff'}`,
+                  pointerEvents: 'none',
+                }}
+              />
+              )}
               <FontAwesomeIcon
                 icon={config.icon}
                 style={{

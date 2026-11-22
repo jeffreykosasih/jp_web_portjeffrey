@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faMousePointer,
+  faEllipsis,
   faTimes,
 } from '@fortawesome/free-solid-svg-icons';
 import { DeviceInfo } from '../lib/types';
-import SideDrawer, { DrawerTitle } from './SideDrawer';
+import SideDrawer, { DrawerTitle, DRAWER_COLORS } from './SideDrawer';
 import {
   getResponsiveValue,
   getSpacing,
@@ -232,7 +233,7 @@ export default function SkillsetPage({
       // let tall content scroll instead of being cut off
       justifyContent: 'flex-start',
       alignItems: 'center',
-      color: '#ffffff',
+      color: 'var(--ui-ink)',
       overflowY: 'auto' as const,
       ...configs[deviceType],
     };
@@ -282,8 +283,8 @@ export default function SkillsetPage({
       borderRadius: '999px',
       minHeight: '2.5rem',
       padding: isPhone ? '0.5rem 1rem' : '0.6rem 1.4rem',
-      backgroundColor: isActive ? '#ffffff' : 'transparent',
-      color: isActive ? (isDarkMode ? '#101c34' : '#00445e') : '#ffffff',
+      backgroundColor: isActive ? 'var(--ui-accent)' : 'transparent',
+      color: isActive ? 'var(--ui-on-accent)' : 'var(--ui-ink)',
       fontWeight: 700,
       fontFamily: 'Lato, sans-serif',
       fontSize: isPhone ? '0.875rem' : '1rem',
@@ -316,7 +317,7 @@ export default function SkillsetPage({
       lineHeight: '1.6',
       fontFamily: 'Lato, sans-serif',
       fontWeight: '400',
-      color: '#dbe7ec',
+      color: 'var(--ui-ink-muted)',
       textAlign: 'center' as const,
       marginTop: 'auto',
       ...configs[deviceType],
@@ -379,7 +380,6 @@ export default function SkillsetPage({
                   : 'calc(var(--space-xl) + 0.75rem) var(--space-lg)',
               borderRadius: 'var(--radius-lg)',
               backgroundColor: 'rgba(0, 0, 0, 0.2)', // dark tint keeps white text above 7:1
-                border: '1px solid rgba(255, 255, 255, 0.22)',
               cursor: 'pointer',
               width: cardWidth,
               maxWidth: cardMaxWidth,
@@ -488,7 +488,7 @@ export default function SkillsetPage({
                     : deviceType === 'tablet'
                     ? 'var(--space-xs)'
                     : 'var(--space-xs)',
-                color: '#ffffff',
+                color: 'var(--ui-ink)',
                 textAlign: 'center',
               }}
             >
@@ -506,7 +506,7 @@ export default function SkillsetPage({
                     : 'calc(var(--text-sm) - 0.05rem)',
                 fontFamily: 'Lato, sans-serif',
                 fontWeight: '400',
-                color: '#dbe7ec',
+                color: 'var(--ui-ink-muted)',
                 textAlign: 'center',
                 margin: 0,
                 lineHeight: '1.3',
@@ -545,35 +545,50 @@ export default function SkillsetPage({
               width: cardWidth,
               maxWidth: cardMaxWidth,
               minHeight: cardMinHeight,
-              border: '1px dashed rgba(255, 255, 255, 0.45)',
+              border: 'none', // no outline, like the other cards
               boxSizing: 'border-box',
               fontFamily: 'inherit',
-              color: '#ffffff',
+              color: 'var(--ui-ink)',
             }}
           >
+            {/* Same parts as the other cards: icon tile, name, one line */}
             <div
               style={{
-                fontSize: deviceInfo?.isMobile ? '2rem' : '2.5rem',
-                color: '#dbe7ec',
-                fontWeight: 'bold',
-                letterSpacing: '0.2em',
+                width: isPhoneCard ? '2.5rem' : '2.75rem',
+                height: isPhoneCard ? '2.5rem' : '2.75rem',
+                borderRadius: 'var(--radius-lg)',
+                backgroundColor: 'rgba(255, 255, 255, 0.14)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: isPhoneCard ? '0.5rem' : '0.8rem',
               }}
             >
-              ...
+              <FontAwesomeIcon icon={faEllipsis} style={{ fontSize: isPhoneCard ? '1.2rem' : '1.4rem' }} />
             </div>
-            <p
+            <h4
               style={{
-                fontSize: deviceInfo?.isMobile ? '0.7rem' : '0.8rem',
+                fontSize: isPhoneCard ? '0.9rem' : '1rem',
+                fontWeight: '700',
                 fontFamily: 'Lato, sans-serif',
-                fontWeight: '400',
-                color: '#dbe7ec',
+                margin: '0 0 0.25rem',
+                color: 'var(--ui-ink)',
                 textAlign: 'center',
-                margin: 0,
-                marginTop: '10px',
-                lineHeight: '1.3',
               }}
             >
               More tools
+            </h4>
+            <p
+              style={{
+                fontSize: isPhoneCard ? '0.75rem' : '0.8rem',
+                fontFamily: 'Lato, sans-serif',
+                color: 'var(--ui-ink-muted)',
+                textAlign: 'center',
+                margin: 0,
+                lineHeight: '1.3',
+              }}
+            >
+              Adobe apps I use now and then
             </p>
           </motion.button>
         )}
@@ -596,7 +611,7 @@ export default function SkillsetPage({
               left: 0,
               width: '100vw',
               height: '100vh',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(0, 0, 0, 0.45)',
               zIndex: 2000,
               display: 'flex',
               alignItems: 'center',
@@ -615,10 +630,14 @@ export default function SkillsetPage({
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ duration: 0.2 }}
               style={{
-                backgroundColor: isDarkMode ? '#162542' : '#005E80',
+                // Same deep panel as the drawers
+                backgroundColor: isDarkMode
+                  ? DRAWER_COLORS.dark.tab
+                  : DRAWER_COLORS.light.tab,
+                border: '1px solid rgba(255, 255, 255, 0.18)',
                 borderRadius: 'var(--radius-lg)',
-                padding: deviceInfo?.isMobile ? '30px 20px' : '40px 30px',
-                maxWidth: '600px',
+                padding: deviceInfo?.isMobile ? '28px 18px' : '36px 30px',
+                maxWidth: '520px',
                 width: '100%',
                 maxHeight: '80vh',
                 overflow: 'auto',
@@ -638,12 +657,10 @@ export default function SkillsetPage({
                   right: '20px',
                   width: '40px',
                   height: '40px',
-                  borderRadius: 'var(--radius-lg)',
-                  border: 'none',
-                  backgroundColor: isDarkMode
-                    ? 'rgba(255, 255, 255, 0.1)'
-                    : 'rgba(255, 255, 255, 0.2)',
-                  color: '#ffffff',
+                  borderRadius: '50%',
+                  border: '1px solid rgba(255, 255, 255, 0.45)',
+                  backgroundColor: 'transparent',
+                  color: 'var(--ui-ink)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -657,13 +674,13 @@ export default function SkillsetPage({
               {/* Title */}
               <h2
                 style={{
-                  fontSize: deviceInfo?.isMobile ? '1.5rem' : '2rem',
-                  fontWeight: '700',
+                  fontSize: deviceInfo?.isMobile ? '1.75rem' : '2.25rem',
+                  fontWeight: '900',
+                  letterSpacing: '-0.02em',
                   fontFamily: 'Lato, sans-serif',
-                  color: '#ffffff',
-                  marginBottom: '30px',
+                  color: 'var(--ui-ink)',
+                  margin: '0.25rem 0 1.5rem',
                   textAlign: 'center',
-                  marginTop: '10px',
                 }}
               >
                 Other Tools
@@ -676,7 +693,7 @@ export default function SkillsetPage({
                   gridTemplateColumns: deviceInfo?.isMobile
                     ? 'repeat(2, 1fr)'
                     : 'repeat(2, 1fr)',
-                  gap: '20px',
+                  gap: '1rem',
                 }}
               >
                 {adobeApps.map((app, index) => (
@@ -693,24 +710,21 @@ export default function SkillsetPage({
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      padding: deviceInfo?.isMobile ? '20px 15px' : '25px 20px',
+                      padding: '1rem 0.75rem',
                       borderRadius: 'var(--radius-lg)',
-                      backgroundColor: isDarkMode
-                        ? 'rgba(255, 255, 255, 0.04)'
-                        : 'rgba(255, 255, 255, 0.04)',
-                      cursor: 'pointer',
+                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
                     }}
                   >
                     <div
                       style={{
-                        width: '50px',
-                        height: '50px',
+                        width: '2.75rem',
+                        height: '2.75rem',
                         borderRadius: 'var(--radius-lg)',
                         backgroundColor: app.color,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        marginBottom: '12px',
+                        marginBottom: '0.8rem',
                       }}
                     >
                       <app.icon
@@ -723,10 +737,10 @@ export default function SkillsetPage({
                     <h4
                       style={{
                         fontSize: '1rem',
-                        fontWeight: '600',
+                        fontWeight: '700',
                         fontFamily: 'Lato, sans-serif',
-                        marginBottom: '6px',
-                        color: '#ffffff',
+                        margin: '0 0 0.25rem',
+                        color: 'var(--ui-ink)',
                         textAlign: 'center',
                       }}
                     >
@@ -737,7 +751,7 @@ export default function SkillsetPage({
                         fontSize: '0.8rem',
                         fontFamily: 'Lato, sans-serif',
                         fontWeight: '400',
-                        color: '#dbe7ec',
+                        color: 'var(--ui-ink-muted)',
                         textAlign: 'center',
                         margin: 0,
                         lineHeight: '1.3',
@@ -755,7 +769,7 @@ export default function SkillsetPage({
                   fontSize: deviceInfo?.isMobile ? '0.8rem' : '0.9rem',
                   fontFamily: 'Lato, sans-serif',
                   fontWeight: '400',
-                  color: '#dbe7ec',
+                  color: 'var(--ui-ink-muted)',
                   textAlign: 'center',
                   margin: 0,
                   marginTop: '25px',

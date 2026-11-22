@@ -29,7 +29,7 @@ export default function PortfolioPage({
   const device = getDrawerDevice(deviceInfo);
   const isPhone = device === 'mobile-portrait' || device === 'mobile-landscape';
   const columns = device === 'mobile-portrait' ? 1 : 2;
-  const brand = isDarkMode ? '#101c34' : '#00445e';
+  const brand = isDarkMode ? '#101c34' : '#0b3a73';
   const shown = projects.filter((p) => p.category === category);
 
   const linkStyle = (key: string): React.CSSProperties => {
@@ -41,9 +41,9 @@ export default function PortfolioPage({
       minHeight: '2.25rem',
       padding: '0 0.75rem',
       borderRadius: '999px',
-      border: '1px solid rgba(255, 255, 255, 0.7)',
-      backgroundColor: hovered ? '#ffffff' : 'transparent',
-      color: hovered ? brand : '#ffffff',
+      border: '1px solid var(--ui-line)',
+      backgroundColor: hovered ? 'var(--ui-accent)' : 'transparent',
+      color: hovered ? 'var(--ui-on-accent)' : 'var(--ui-ink)',
       fontFamily: 'Lato, sans-serif',
       fontWeight: 700,
       fontSize: '0.875rem',
@@ -111,8 +111,8 @@ export default function PortfolioPage({
                   fontFamily: 'Lato, sans-serif',
                   fontWeight: 700,
                   fontSize: isPhone ? '0.875rem' : '1rem',
-                  backgroundColor: active ? '#ffffff' : 'transparent',
-                  color: active ? brand : '#ffffff',
+                  backgroundColor: active ? 'var(--ui-accent)' : 'transparent',
+                  color: active ? 'var(--ui-on-accent)' : 'var(--ui-ink)',
                   transition: 'background-color 0.2s ease, color 0.2s ease',
                 }}
               >
@@ -149,7 +149,6 @@ export default function PortfolioPage({
                   borderRadius: '1rem',
                   overflow: 'hidden',
                   backgroundColor: 'rgba(0, 0, 0, 0.2)', // keeps white text above 7:1
-                  border: '1px solid rgba(255, 255, 255, 0.22)',
                 }}
               >
                 <img
@@ -180,7 +179,7 @@ export default function PortfolioPage({
                       fontSize: '0.75rem',
                       letterSpacing: '0.06em',
                       textTransform: 'uppercase',
-                      color: '#dbe7ec',
+                      color: 'var(--ui-ink-muted)',
                     }}
                   >
                     {project.kind}
@@ -192,7 +191,7 @@ export default function PortfolioPage({
                       fontWeight: 800,
                       fontSize: isPhone ? '1.1rem' : '1.2rem',
                       lineHeight: 1.2,
-                      color: '#ffffff',
+                      color: 'var(--ui-ink)',
                     }}
                   >
                     {project.title}
@@ -203,7 +202,7 @@ export default function PortfolioPage({
                       fontFamily: 'Lato, sans-serif',
                       fontSize: '0.9rem',
                       lineHeight: 1.45,
-                      color: '#ffffff',
+                      color: 'var(--ui-ink)',
                     }}
                   >
                     {project.summary}

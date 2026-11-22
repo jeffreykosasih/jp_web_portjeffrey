@@ -3,6 +3,8 @@ import { HiSpeakerWave, HiSpeakerXMark } from 'react-icons/hi2';
 import { DeviceInfo } from '../lib/types';
 import {
   getButtonStyles,
+  getDockedStyles,
+  type ButtonDock,
   getResponsiveIconSize,
   getIconColor,
   createHoverHandlers,
@@ -15,6 +17,8 @@ interface SoundToggleProps {
   onToggle: () => void;
   isHidden?: boolean;
   deviceInfo?: DeviceInfo;
+  /** Where to sit while a page drawer is open */
+  dock?: ButtonDock | null;
 }
 
 // Gap between this button and the credits button to its left.
@@ -27,6 +31,7 @@ export default function SoundToggle({
   onToggle,
   isHidden = false,
   deviceInfo,
+  dock = null,
 }: SoundToggleProps): React.JSX.Element | null {
   const [isHovered, setIsHovered] = React.useState(false);
 
@@ -47,7 +52,7 @@ export default function SoundToggle({
 
   return (
     <button
-      style={{ ...buttonStyles, left: `${left}px` }}
+      style={{ ...buttonStyles, left: `${left}px`, ...getDockedStyles(deviceInfo, dock) }}
       onClick={onToggle}
       {...hoverHandlers}
       aria-label={isSoundOn ? 'Turn wave sound off' : 'Turn wave sound on'}

@@ -27,6 +27,8 @@ interface SceneProps {
   homeButtonsIntroDelayMs?: number;
   /** The landmark the camera should zoom to, or null for the island view. */
   focusPage?: string | null;
+  /** Jump straight to the new landmark (used under the page-switch fade) */
+  snapCamera?: boolean;
 }
 
 // ============================================
@@ -46,10 +48,13 @@ interface InteractiveObjectProps {
 function ObjectBrightness({
   object,
   isHovered,
+  isLit = false,
   isDarkMode,
 }: {
   object: any;
   isHovered: boolean;
+  /** The landmark of the open page: a softer, steady highlight */
+  isLit?: boolean;
   isDarkMode?: boolean;
 }) {
   const originalMaterials = useRef<Map<any, any>>(new Map());
@@ -73,11 +78,14 @@ function ObjectBrightness({
 
         const original = originalMaterials.current.get(child.material);
 
-        if (isHovered) {
-          // Apply balanced brightness effect that won't cause disappearing
-          const colorMultiplier = isDarkMode ? 2.2 : 1.4; // Reduced multipliers to prevent overexposure
-          const emissiveMultiplier = isDarkMode ? 2.0 : 1.2;
-          const emissiveBoost = isDarkMode ? 0.5 : 0.2;
+        if (isHovered || isLit) {
+          // Hover is a clear lift; an open page's landmark gets a gentle
+          // one in daylight (strong light already falls on it) and the full
+          // lift at night
+          const soft = isLit && !isHovered && !isDarkMode;
+          const colorMultiplier = isDarkMode ? 2.2 : soft ? 1.12 : 1.4;
+          const emissiveMultiplier = isDarkMode ? 2.0 : soft ? 1.05 : 1.2;
+          const emissiveBoost = isDarkMode ? 0.5 : soft ? 0.05 : 0.2;
 
           child.material.color
             .copy(original.color)
@@ -109,7 +117,7 @@ function ObjectBrightness({
         child.material.needsUpdate = true;
       }
     });
-  }, [object, isHovered, isDarkMode]);
+  }, [object, isHovered, isLit, isDarkMode]);
 
   return null;
 }
@@ -172,7 +180,7 @@ function InteractiveObject({
 
       <group ref={objectRef}>{children}</group>
       {/* Light over the landmark whose page is open */}
-      {spotlight && (
+      {spotlight && isDarkMode && (
         <pointLight
           position={[position[0], position[1] + 10, position[2] - 6]}
           color={isDarkMode ? '#ffe2a8' : '#fff6e0'}
@@ -184,6 +192,7 @@ function InteractiveObject({
       <ObjectBrightness
         object={objectRef.current}
         isHovered={isHovered || externalHovered}
+        isLit={spotlight}
         isDarkMode={isDarkMode}
       />
     </group>
@@ -387,6 +396,25 @@ function processSceneNode(
   return clonedScene;
 }
 
+// Layout (screen-left is +x from the island view):
+//   one row across the island: house — lamp — desk — lamp — beach chairs
+//   front-centre: the dog on the dock, framed by the dock's two lamps
+// Everything below (models, lamps, labels, click areas, camera) reads from
+// this table.
+const LANDMARK = {
+  house: { x: 24, z: 10, ground: 0 },
+  desk: { x: -4, z: 10, ground: 0.5 },
+  chairs: { x: -28, z: 10, ground: 0.5 },
+  dog: { x: -2, z: -39, ground: 1.0 }, // on the dock deck (measured ~0.97)
+} as const;
+
+// Lamps midway between the row's landmarks, plus one beside the chairs
+const LAMPS: { position: [number, number, number]; rotation: number }[] = [
+  { position: [(LANDMARK.house.x + LANDMARK.desk.x) / 2, 0.5, LANDMARK.house.z], rotation: 1 },
+  { position: [(LANDMARK.desk.x + LANDMARK.chairs.x) / 2, 0.5, LANDMARK.desk.z], rotation: 5.5 },
+  { position: [LANDMARK.chairs.x - 9, 0.5, LANDMARK.chairs.z - 2], rotation: 5.5 }, // beside the Connect chairs
+];
+
 // Wrap a model so it sits on y=0, is centred on x/z, and its largest side
 // is `size` units. Lets models from different sources share one scale.
 function fitToSize(object: THREE.Object3D, size: number): THREE.Group {
@@ -401,6 +429,38 @@ function fitToSize(object: THREE.Object3D, size: number): THREE.Group {
 }
 
 // Island Terrain Components
+
+// Centres of every lamp bulb (the `Light_Pole_Light` material) in a
+// model's own space, so a glow can sit exactly on the bulb
+function findBulbCentres(root: THREE.Object3D): THREE.Vector3[] {
+  root.updateMatrixWorld(true);
+  const centres: THREE.Vector3[] = [];
+  root.traverse((child: any) => {
+    if (!child.isMesh) return;
+    const mats = Array.isArray(child.material) ? child.material : [child.material];
+    if (!mats.some((m: any) => m?.name === 'Light_Pole_Light')) return;
+    centres.push(new THREE.Box3().setFromObject(child).getCenter(new THREE.Vector3()));
+  });
+  return centres;
+}
+
+// Warm light and halo placed on a lit bulb at night
+function BulbGlow({ position }: { position: THREE.Vector3 }) {
+  return (
+    <group position={position}>
+      <pointLight color='#ffc66b' intensity={55} distance={20} decay={1.6} />
+      <sprite scale={[5, 5, 1]}>
+        <spriteMaterial
+          map={getHaloTexture()}
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          opacity={0.65}
+        />
+      </sprite>
+    </group>
+  );
+}
 
 function SimpleIsland({
   isDarkMode,
@@ -425,6 +485,15 @@ function SimpleIsland({
   };
 
   const clonedScene = useMemo(() => processSceneNode(scene, isDarkMode, (node, material) => {
+    // The dock's built-in lamp is switched on, like the lamp posts
+    if (material.name === 'Light_Pole_Light') {
+      material.color.set('#ffe3a3');
+      material.emissive?.set?.('#ffcf6e');
+      material.emissiveIntensity = isDarkMode ? 2.6 : 0.9;
+      material.toneMapped = false;
+      material.needsUpdate = true;
+      return;
+    }
     // Store original color if not already stored
     if (!material.userData) material.userData = {};
     if (!material.userData.originalColor) {
@@ -459,17 +528,36 @@ function SimpleIsland({
     material.needsUpdate = true;
   }), [scene, isDarkMode]);
 
+  // Tag the island so props can find its ground (the lamp model also has a
+  // node called object_island)
+  if (clonedScene) clonedScene.userData.isIslandGround = true;
+
+  // Where the island's own lamp bulbs are, in world space
+  const islandBulbs = useMemo(() => {
+    if (!clonedScene) return [];
+    const scale = getIslandScale()[0];
+    return findBulbCentres(clonedScene).map((c) =>
+      c.multiplyScalar(scale).add(new THREE.Vector3(0, -2, 0))
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clonedScene, deviceInfo]);
+
   // Handle case where scene processing failed
   if (!clonedScene) {
     return null;
   }
 
   return (
-    <primitive
-      object={clonedScene}
-      position={[0, -2, 0]}
-      scale={getIslandScale()}
-    />
+    <group>
+      <primitive
+        object={clonedScene}
+        position={[0, -2, 0]}
+        scale={getIslandScale()}
+      />
+      {/* Night light on the dock's built-in lamp bulb */}
+      {isDarkMode &&
+        islandBulbs.map((bulb, i) => <BulbGlow key={i} position={bulb} />)}
+    </group>
   );
 }
 
@@ -612,10 +700,14 @@ function SimpleClouds({
   );
 }
 
+// The gentle up-and-down of anything floating: the boat and the swim rings
+// share it, so they all ride the same swell
+const waterBob = (time: number, phase = 0) => Math.sin(time * 0.8 + phase) * 0.3;
+
 // Which way the boat points (radians around the vertical axis)
-const BOAT_HEADING = -0.3; // bow turned toward the viewer, so it takes little width
+const BOAT_HEADING = 1.27; // side-on, hook end pointing at the dock
 // Height that keeps the hull sitting on the water rather than in it
-const BOAT_WATERLINE = 1.2;
+const BOAT_WATERLINE = 0.8;
 
 function SimpleBoat({
   isDarkMode,
@@ -638,7 +730,7 @@ function SimpleBoat({
     if (boatRef.current && shouldUpdate) {
       const time = clock.getElapsedTime();
       // Bob gently around the waterline instead of dipping under it
-      boatRef.current.position.y = BOAT_WATERLINE + Math.sin(time * 0.8) * 0.3;
+      boatRef.current.position.y = BOAT_WATERLINE + waterBob(time);
     }
   });
 
@@ -693,8 +785,8 @@ function SimpleBoat({
   return (
     <group
       ref={boatRef}
-      position={[-21, 1.2, -50]} // moored to the right of the dock, clear of the shore
-      scale={[8.8, 8.8, 8.8]} // ~7.5 m fishing boat
+      position={[-16, 0.8, -49]} // moored beside the dock, clear of the shore
+      scale={[6, 6, 6]} // ~5 m fishing boat
       rotation={[0, BOAT_HEADING, 0]}
     >
       <group position={boatCenter}>
@@ -754,12 +846,15 @@ function SimpleTwoChairs({ isDarkMode }: { isDarkMode: boolean }) {
   return (
     <primitive
       object={clonedScene}
-      position={[-23, 0.5, -15]}
+      position={[LANDMARK.chairs.x, LANDMARK.chairs.ground, LANDMARK.chairs.z]}
       scale={[2, 2, 2]}
       rotation={[0, 2.5, 0]}
     />
   );
 }
+
+// Which way the house faces (radians); tuned so its front faces the viewer
+const HOUSE_HEADING = 3.14;
 
 function SimpleHouse({ isDarkMode }: { isDarkMode: boolean }) {
   const { scene } = useGLTF('/models/object_house.glb');
@@ -836,9 +931,9 @@ function SimpleHouse({ isDarkMode }: { isDarkMode: boolean }) {
   return (
     <primitive
       object={clonedScene}
-      position={[15, 0, 15]}
+      position={[LANDMARK.house.x, LANDMARK.house.ground, LANDMARK.house.z]}
       scale={[2.4, 2.4, 2.4]} // beach house on stilts, the island's main building
-      rotation={[0, 3.75, 0]}
+      rotation={[0, HOUSE_HEADING, 0]}
     />
   );
 }
@@ -891,7 +986,10 @@ function SimpleDog({ isDarkMode }: { isDarkMode: boolean }) {
   if (!object) return null;
 
   return (
-    <group position={[20, 1.1, -10]} rotation={[0, 3.6, 0]}>
+    <group
+      position={[LANDMARK.dog.x, LANDMARK.dog.ground, LANDMARK.dog.z]}
+      rotation={[0, 2.6, 0]} // facing the viewer, down the dock
+    >
       <primitive object={object} />
       {isDarkMode && (
         <>
@@ -932,7 +1030,10 @@ function SimpleComputerDesk({ isDarkMode }: { isDarkMode: boolean }) {
   if (!object) return null;
 
   return (
-    <group position={[-16, 0.5, 12]} rotation={[0, 3.3, 0]}>
+    <group
+      position={[LANDMARK.desk.x, LANDMARK.desk.ground, LANDMARK.desk.z]}
+      rotation={[0, 3.3, 0]}
+    >
       <primitive object={object} />
     </group>
   );
@@ -940,6 +1041,171 @@ function SimpleComputerDesk({ isDarkMode }: { isDarkMode: boolean }) {
 
 // How far out the shoreline sits, as a share of the island model's radius
 const SHORE_FIT = 0.86;
+
+// Small set dressing so the island feels lived in. Props come from one
+// pack (Low Poly Beach Assets) and are picked out by name; each is sized to
+// a real-world size on the island's ruler (~3 units per metre).
+type PropSpot = {
+  name: string; // node name in the pack
+  size: number; // largest side, in units
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  float?: boolean; // sits on the water rather than the ground
+};
+
+// Island surfaces a prop can stand on (the ground, rocks, the dock)
+const GROUND_MATERIALS = new Set(['Grass_2', 'Island_Rocks', 'Port_Wood']);
+
+// Height of the island's ground at (x, z), or null if there's no island there
+function groundHeight(scene: THREE.Object3D, x: number, z: number): number | null {
+  let island: THREE.Object3D | null = null;
+  scene.traverse((o) => {
+    if (!island && o.userData.isIslandGround) island = o;
+  });
+  if (!island) return null;
+  const ray = new THREE.Raycaster(new THREE.Vector3(x, 80, z), new THREE.Vector3(0, -1, 0));
+  const hit = ray
+    .intersectObject(island, true)
+    .find((h: any) => {
+      const m = Array.isArray(h.object.material) ? h.object.material[0] : h.object.material;
+      return GROUND_MATERIALS.has(m?.name);
+    });
+  return hit ? hit.point.y : null;
+}
+
+// Once the island is in the scene, drop each land prop onto the ground
+function useSnapToGround(
+  refs: React.MutableRefObject<(THREE.Object3D | null)[]>,
+  spots: { position: [number, number, number]; float?: boolean }[]
+) {
+  const { scene } = useThree();
+  useEffect(() => {
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      scene.updateMatrixWorld(true);
+      let placed = 0;
+      spots.forEach((spot, i) => {
+        const obj = refs.current[i];
+        if (!obj || spot.float) return placed++;
+        const y = groundHeight(scene, spot.position[0], spot.position[2]);
+        if (y !== null) {
+          obj.position.y = y;
+          placed++;
+        }
+      });
+      if (placed === spots.length || ++tries > 40) window.clearInterval(timer);
+    }, 150);
+    return () => window.clearInterval(timer);
+  }, [scene, refs, spots]);
+}
+
+// All land props sit inside the fence (about 33-40 units from the centre)
+// and out of the camera's routes to the four landmarks. Their height comes
+// from the ground under them at runtime (see snapToGround), so they always
+// stand on the island; the swim rings float on the water instead.
+const BEACH_PROPS: PropSpot[] = [
+  // surfboards leaning by the left side of the house porch
+  { name: 'SURFBOARD', size: 6.6, position: [29, 0, -4], rotation: [0, 0.3, 0] },
+  { name: 'SURFBOARD2', size: 6.6, position: [31.5, 0, -1.5], rotation: [0, 0.6, 0] },
+  // cooler beside the beach chairs
+  { name: 'FRIDGE', size: 2, position: [-21, 0, 3], rotation: [0, 0.4, 0] },
+  // picnic spot on the front-right grass, by the hammock
+  { name: 'UMBRELLA1', size: 6.6, position: [-13, 0, -24], rotation: [0, 0.4, 0] },
+  { name: 'TOWEL1', size: 5.4, position: [-10, 0, -27.5], rotation: [0, 0.4, 0] },
+  { name: 'BALL', size: 1.2, position: [-17, 0, -14] },
+  // volleyball net and ball behind the row
+  { name: 'VOLLEYBALL2', size: 16, position: [11, 0, 33], rotation: [0, 0, 0] },
+  { name: 'VOLLEYBALL1', size: 1.3, position: [5, 0, 27] },
+  // swim rings floating in the water (not snapped to land)
+  { name: 'FLOAT1', size: 3.4, position: [-30, -1.9, -47], float: true },
+  { name: 'FLOAT2', size: 3.4, position: [14, -1.9, -52], float: true },
+];
+
+function shadeForTime(material: any, isDarkMode: boolean) {
+  if (!material?.color) return;
+  if (!material.userData.baseColor) material.userData.baseColor = material.color.clone();
+  material.color.copy(material.userData.baseColor).multiplyScalar(isDarkMode ? 0.28 : 1.25);
+  material.needsUpdate = true;
+}
+
+function BeachProps({ isDarkMode }: { isDarkMode: boolean }) {
+  const { scene } = useGLTF('/models/object_beach_props.glb');
+  const props = useMemo(() => {
+    scene.updateMatrixWorld(true);
+    return BEACH_PROPS.map((spot) => {
+      const source = scene.getObjectByName(spot.name);
+      if (!source) return null;
+      // Copy the prop with its world transform baked in, then size it
+      const copy = source.clone(true);
+      copy.applyMatrix4(source.parent!.matrixWorld);
+      copy.traverse((child: any) => {
+        if (!child.isMesh) return;
+        child.material = child.material.clone();
+        shadeForTime(child.material, isDarkMode);
+      });
+      return { spot, object: fitToSize(copy, spot.size) };
+    }).filter(Boolean) as { spot: PropSpot; object: THREE.Group }[];
+  }, [scene, isDarkMode]);
+
+  const refs = useRef<(THREE.Object3D | null)[]>([]);
+  const spots = useMemo(() => props.map((p) => p.spot), [props]);
+  useSnapToGround(refs, spots);
+
+  // Floating props (the duck swim rings) bob at the boat's speed, each a
+  // little out of step with the boat
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    spots.forEach((spot, i) => {
+      const obj = refs.current[i];
+      if (spot.float && obj) obj.position.y = spot.position[1] + waterBob(t, 0.9 + i * 0.7);
+    });
+  });
+
+  return (
+    <group>
+      {props.map(({ spot, object }, i) => (
+        <primitive
+          key={spot.name}
+          ref={(el: THREE.Object3D | null) => {
+            refs.current[i] = el; // no return: React 19 would treat it as a cleanup
+          }}
+          object={object}
+          position={spot.position}
+          rotation={spot.rotation ?? [0, 0, 0]}
+        />
+      ))}
+    </group>
+  );
+}
+
+// Hammock (Andrey 3D), sized to about 3.5 m long
+const HAMMOCK = { position: [-24, 0, -21] as [number, number, number], heading: 0.4, size: 10.5 };
+const HAMMOCK_SPOTS = [{ position: HAMMOCK.position }];
+
+function SimpleHammock({ isDarkMode }: { isDarkMode: boolean }) {
+  const { scene } = useGLTF('/models/object_hammock.glb');
+  const object = useMemo(() => {
+    const copy = scene.clone(true);
+    copy.traverse((child: any) => {
+      if (!child.isMesh) return;
+      child.material = child.material.clone();
+      shadeForTime(child.material, isDarkMode);
+    });
+    return fitToSize(copy, HAMMOCK.size);
+  }, [scene, isDarkMode]);
+  const refs = useRef<(THREE.Object3D | null)[]>([]);
+  useSnapToGround(refs, HAMMOCK_SPOTS);
+  return (
+    <primitive
+      ref={(el: THREE.Object3D | null) => {
+            refs.current[0] = el; // no return: React 19 would treat it as a cleanup
+          }}
+      object={object}
+      position={HAMMOCK.position}
+      rotation={[0, HAMMOCK.heading, 0]}
+    />
+  );
+}
 
 function SimpleIslandLamp({
   isDarkMode,
@@ -983,6 +1249,15 @@ function SimpleIslandLamp({
   }
 
   const clonedScene = useMemo(() => processSceneNode(scene, isDarkMode, (node, material) => {
+    // The bulb is switched on: lit softly by day, brightly at night
+    if (material.name === 'Light_Pole_Light') {
+      material.color.set('#ffe3a3');
+      material.emissive?.set?.('#ffcf6e');
+      material.emissiveIntensity = isDarkMode ? 2.6 : 0.9;
+      material.toneMapped = false;
+      material.needsUpdate = true;
+      return;
+    }
     // Store original color if not already stored - same as island processing
     if (!material.userData) material.userData = {};
     if (!material.userData.originalColor) {
@@ -1017,6 +1292,14 @@ function SimpleIslandLamp({
     material.needsUpdate = true;
   }), [scene, isDarkMode]);
 
+  // The bulb hangs off the lamp's arm; find it so the glow sits on it
+  const lampBulbs = useMemo(() => {
+    if (!clonedScene) return [];
+    const scale = getLampScale()[0];
+    return findBulbCentres(clonedScene).map((c) => c.multiplyScalar(scale));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clonedScene, deviceInfo]);
+
   // Handle case where scene processing failed
   if (!clonedScene) {
     return (
@@ -1034,26 +1317,26 @@ function SimpleIslandLamp({
   }
 
   return (
-    <primitive
-      object={clonedScene}
-      position={position}
-      rotation={rotation}
-      scale={getLampScale()}
-    />
+    <group position={position} rotation={rotation}>
+      <primitive object={clonedScene} scale={getLampScale()} />
+      {/* At night the bulb lights the ground around it */}
+      {isDarkMode &&
+        lampBulbs.map((bulb, i) => <BulbGlow key={i} position={bulb} />)}
+    </group>
   );
 }
 
 // Environment (Sky, Sea, Camera)
 
-// Port Jeffrey's own palette. Day: an airy blue sky that warms to a cream
-// horizon over a bright cerulean sea, in the same blue-teal family as the
-// UI. Night: deep navy sky and sea, matching the night UI.
+// Port Jeffrey's own palette. Day: an airy sky warming to a cream horizon
+// over an azure-to-cobalt sea, the same blue family as the UI (#12508f,
+// #0b3a73). Night: deep navy sky and sea, matching the night UI.
 const PALETTE = {
   light: {
-    skyTop: '#8fcbef',
+    skyTop: '#9fcbf2',
     horizon: '#fdf2e2',
-    sea: '#2394bf', // bright cerulean, same hue family as the UI teal
-    shallow: '#2394bf',
+    sea: '#0f4f96', // deep cobalt toward the horizon
+    shallow: '#3b9be0', // bright azure close to the viewer
     foam: '#f2fdff',
     sunDir: [-0.75, 0.13, 1] as [number, number, number],
     sunColor: '#fff1d6',
@@ -1061,8 +1344,8 @@ const PALETTE = {
   dark: {
     skyTop: '#070d24',
     horizon: '#2b2d5c',
-    sea: '#162542', // the site's night navy
-    shallow: '#162542',
+    sea: '#101d38', // night navy far away
+    shallow: '#1d3358', // a touch lighter close by
     foam: '#6c8bb5',
     sunDir: [0.75, 0.15, 1] as [number, number, number], // moon
     sunColor: '#9fb6ff',
@@ -1195,8 +1478,10 @@ const OCEAN_FRAGMENT = `
     vec3 v = normalize(cameraPosition - vWorld);
     float facing = max(dot(n, v), 0.0);
 
-    // one even water colour (no lighter patch around the island)
-    vec3 water = uDeep;
+    // turquoise close to the viewer, deepening to ocean blue toward the
+    // horizon; based on distance from the camera, so it never forms a ring
+    float far = smoothstep(25.0, 230.0, distance(cameraPosition.xz, p));
+    vec3 water = mix(uShallow, uDeep, far);
     water *= 0.85 + 0.25 * max(dot(n, normalize(vec3(0.4, 1.0, -0.3))), 0.0);
 
     // reflection of the sky, stronger at grazing angles (far away)
@@ -1404,10 +1689,10 @@ function SimpleOceanWaves({
 // Where the camera looks when a landmark is opened, slightly above each
 // model's base so the whole object sits in frame.
 const FOCUS_TARGETS: Record<string, THREE.Vector3> = {
-  connect: new THREE.Vector3(-23, 3, -15),
-  portfolio: new THREE.Vector3(15, 7.5, 15),
-  profile: new THREE.Vector3(20, 2.5, -10),
-  skillset: new THREE.Vector3(-16, 2.8, 12),
+  connect: new THREE.Vector3(LANDMARK.chairs.x, 3, LANDMARK.chairs.z),
+  portfolio: new THREE.Vector3(LANDMARK.house.x, 7.5, LANDMARK.house.z),
+  profile: new THREE.Vector3(LANDMARK.dog.x, LANDMARK.dog.ground + 1.5, LANDMARK.dog.z),
+  skillset: new THREE.Vector3(LANDMARK.desk.x, 2.8, LANDMARK.desk.z),
 };
 
 // Wide landmarks (the row of surfboards) need the camera a little further back
@@ -1437,11 +1722,18 @@ function AnimatedCamera({
   deviceInfo,
   triggerInitialZoom = false,
   focusPage = null,
+  snap = false,
+  onHomeChange,
 }: {
   deviceInfo?: any;
   triggerInitialZoom?: boolean;
   focusPage?: string | null;
+  snap?: boolean;
+  /** Called with true once the camera has settled on the island view, and
+   * false as soon as it starts moving away (or toward it) */
+  onHomeChange?: (atHome: boolean) => void;
 }) {
+  const atHomeRef = useRef<boolean | null>(null);
   const cameraRef = useRef<any>(null);
   const lookAt = useRef(new THREE.Vector3(0, 0, 0));
   const introStarted = useRef(false);
@@ -1551,8 +1843,9 @@ function AnimatedCamera({
     const tw = tween.current;
     if (tw.key !== key) {
       tw.key = key;
-      tw.elapsed = 0;
       tw.duration = introDone.current ? 1.4 : 3;
+      // Under the page-switch fade the camera jumps straight there
+      tw.elapsed = snap ? tw.duration : 0;
       tw.fromPos.copy(camera.position);
       tw.fromLook.copy(lookAt.current);
       tw.fromFilm = camera.filmOffset;
@@ -1570,6 +1863,15 @@ function AnimatedCamera({
     }
 
     if (p >= 1) introDone.current = true;
+
+    // Tell the scene whether the camera is resting on the island view, so
+    // the island labels only show once a zoom in or out has finished
+    // (not before the opening zoom has run, so labels don't flash at load)
+    const atHome = tw.key === 'home' && p >= 1 && introDone.current;
+    if (atHomeRef.current !== atHome) {
+      atHomeRef.current = atHome;
+      onHomeChange?.(atHome);
+    }
   });
 
   return (
@@ -1597,10 +1899,12 @@ function ScreenPositionTracker({
 
   // Object positions in 3D world space (matching InteractiveObject positions)
   const objectPositions = {
-    twochairs: new THREE.Vector3(-23, 0.5, -15),
-    house: new THREE.Vector3(15, 0, 15),
-    stonehead: new THREE.Vector3(20, -1, -10),
-    surfboard: new THREE.Vector3(-16, 2, 12),
+    // Label anchors: the top of each back-row landmark, and the ground just
+    // in front of each front-row one (their labels hang below)
+    twochairs: new THREE.Vector3(LANDMARK.chairs.x, 10, LANDMARK.chairs.z),
+    house: new THREE.Vector3(LANDMARK.house.x, 20, LANDMARK.house.z), // roof line
+    stonehead: new THREE.Vector3(LANDMARK.dog.x, 0, LANDMARK.dog.z - 3),
+    surfboard: new THREE.Vector3(LANDMARK.desk.x, 7, LANDMARK.desk.z),
   };
 
   useFrame(() => {
@@ -1648,8 +1952,11 @@ function SceneComponent({
   showHomeButtons = true,
   homeButtonsIntroDelayMs = 0,
   focusPage = null,
+  snapCamera = false,
 }: SceneProps) {
   const [sceneLoaded, setSceneLoaded] = useState(false);
+  // Labels wait until the camera has settled on the island view
+  const [cameraAtHome, setCameraAtHome] = useState(false);
   const [hoveredSceneObject, setHoveredSceneObject] = useState<string | null>(null);
   const [hoveredButtonObject, setHoveredButtonObject] = useState<string | null>(
     null
@@ -1658,6 +1965,13 @@ function SceneComponent({
     Record<string, [number, number]>
   >({});
   const activeHoveredObject = hoveredButtonObject || hoveredSceneObject;
+
+  // Opening or closing a page clears any hover left over from the click, so
+  // the labels come back on the island without a highlight
+  useEffect(() => {
+    setHoveredSceneObject(null);
+    setHoveredButtonObject(null);
+  }, [focusPage]);
   // The landmark for the open page stays lit until the page closes
   const litObject = focusPage ? PAGE_OBJECT[focusPage] ?? null : null;
 
@@ -1737,7 +2051,7 @@ function SceneComponent({
         onNavigate={handleNavigation}
         onHoverObject={setHoveredButtonObject}
         highlightedObject={hoveredSceneObject}
-        isVisible={showHomeButtons}
+        isVisible={showHomeButtons && cameraAtHome}
         introDelayMs={homeButtonsIntroDelayMs}
       />
 
@@ -1821,9 +2135,9 @@ function SceneComponent({
             onHover={handleTwoChairsHover}
             onClick={() => handleNavigation('connect')}
             boundingBox={getBoundingBox([8, 8, 8])}
-            position={[-23, 5, -15]}
+            position={[LANDMARK.chairs.x, 5, LANDMARK.chairs.z]}
             isDarkMode={isDarkMode}
-            externalHovered={activeHoveredObject === 'twochairs' || litObject === 'twochairs'}
+            externalHovered={activeHoveredObject === 'twochairs'}
             spotlight={litObject === 'twochairs'}
           >
             <SimpleTwoChairs
@@ -1836,9 +2150,9 @@ function SceneComponent({
             onHover={handleHouseHover}
             onClick={() => handleNavigation('portfolio')}
             boundingBox={getBoundingBox([20, 16, 16])}
-            position={[14, 8, 15]}
+            position={[LANDMARK.house.x - 1, 8, LANDMARK.house.z]}
             isDarkMode={isDarkMode}
-            externalHovered={activeHoveredObject === 'house' || litObject === 'house'}
+            externalHovered={activeHoveredObject === 'house'}
             spotlight={litObject === 'house'}
           >
             <SimpleHouse key={`house-${isDarkMode}`} isDarkMode={isDarkMode} />
@@ -1848,9 +2162,9 @@ function SceneComponent({
             onHover={handleStoneHeadHover}
             onClick={() => handleNavigation('profile')}
             boundingBox={getBoundingBox([6, 5, 7])}
-            position={[20, 3, -10]}
+            position={[LANDMARK.dog.x, LANDMARK.dog.ground + 2, LANDMARK.dog.z]}
             isDarkMode={isDarkMode}
-            externalHovered={activeHoveredObject === 'stonehead' || litObject === 'stonehead'}
+            externalHovered={activeHoveredObject === 'stonehead'}
             spotlight={litObject === 'stonehead'}
           >
             <SimpleDog key={`dog-${isDarkMode}`} isDarkMode={isDarkMode} />
@@ -1860,9 +2174,9 @@ function SceneComponent({
             onHover={handleSurfboardHover}
             onClick={() => handleNavigation('skillset')}
             boundingBox={getBoundingBox([10, 7, 10])}
-            position={[-16, 3.5, 12]}
+            position={[LANDMARK.desk.x, 3.5, LANDMARK.desk.z]}
             isDarkMode={isDarkMode}
-            externalHovered={activeHoveredObject === 'surfboard' || litObject === 'surfboard'}
+            externalHovered={activeHoveredObject === 'surfboard'}
             spotlight={litObject === 'surfboard'}
           >
             <SimpleComputerDesk
@@ -1871,28 +2185,20 @@ function SceneComponent({
             />
           </InteractiveObject>
 
-          {/* Island Lamps (non-interactive) - positioned around the island */}
-          <SimpleIslandLamp
-            key={`lamp1-${isDarkMode}`}
-            isDarkMode={isDarkMode}
-            position={[17.5, 0.5, 0]}
-            rotation={[0, 1, 0]}
-            deviceInfo={deviceInfo}
-          />
-          <SimpleIslandLamp
-            key={`lamp2-${isDarkMode}`}
-            isDarkMode={isDarkMode}
-            position={[-5, 0.5, 20]}
-            rotation={[0, 5.5, 0]}
-            deviceInfo={deviceInfo}
-          />
-          <SimpleIslandLamp
-            key={`lamp3-${isDarkMode}`}
-            isDarkMode={isDarkMode}
-            position={[-25, 0.5, 0]}
-            rotation={[0, 5.5, 0]}
-            deviceInfo={deviceInfo}
-          />
+          {/* Set dressing: hammock and beach props */}
+          <SimpleHammock isDarkMode={isDarkMode} />
+          <BeachProps isDarkMode={isDarkMode} />
+
+          {/* Lamp posts (non-interactive), lit at night */}
+          {LAMPS.map((lamp, i) => (
+            <SimpleIslandLamp
+              key={`lamp${i}-${isDarkMode}`}
+              isDarkMode={isDarkMode}
+              position={lamp.position}
+              rotation={[0, lamp.rotation, 0]}
+              deviceInfo={deviceInfo}
+            />
+          ))}
 
           {/* Boat (non-interactive) */}
           <SimpleBoat
@@ -1917,9 +2223,11 @@ function SceneComponent({
         </Suspense>
 
         <AnimatedCamera
+          onHomeChange={setCameraAtHome}
           deviceInfo={deviceInfo}
           triggerInitialZoom={triggerInitialZoom}
           focusPage={focusPage}
+          snap={snapCamera}
         />
 
         {/* Screen Position Tracker */}
@@ -1938,6 +2246,8 @@ useGLTF.preload('/models/object_boat.glb');
 useGLTF.preload('/models/object_two_chairs.glb');
 useGLTF.preload('/models/object_house.glb');
 useGLTF.preload('/models/object_dog.glb');
+useGLTF.preload('/models/object_hammock.glb');
+useGLTF.preload('/models/object_beach_props.glb');
 useGLTF.preload('/models/object_computer_desk.glb');
 useGLTF.preload('/models/object_island_lamp.glb');
 useGLTF.preload('/models/object_cloud_puffy.glb');

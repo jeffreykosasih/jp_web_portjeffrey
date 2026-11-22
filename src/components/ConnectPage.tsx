@@ -45,7 +45,7 @@ export default function ConnectPage({
 }: ConnectPageProps) {
   const device = getDrawerDevice(deviceInfo);
   const isPhone = device === 'mobile-portrait' || device === 'mobile-landscape';
-  const brand = isDarkMode ? '#101c34' : '#00445e';
+  const brand = isDarkMode ? '#101c34' : '#0b3a73';
 
   const [showForm, setShowForm] = React.useState(false);
   const [toast, setToast] = React.useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -134,13 +134,15 @@ export default function ConnectPage({
   };
 
   const size = isPhone ? 64 : 76;
+  // Accent for fills and outlines: white by day, yellow at night
+  const accent = isDarkMode ? '#ffd36b' : '#ffffff';
   const roundButton: React.CSSProperties = {
     width: size,
     height: size,
     borderRadius: '50%',
-    border: '2px solid rgba(255, 255, 255, 0.85)',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    color: '#ffffff',
+    border: 'none',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    color: 'var(--ui-accent)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -177,9 +179,10 @@ export default function ConnectPage({
     boxSizing: 'border-box',
     padding: '0.8rem 1rem',
     borderRadius: '0.75rem',
-    border: `2px solid ${errors[field] ? '#ffd1d1' : 'rgba(255, 255, 255, 0.55)'}`,
+    // White by day, yellow at night (the drawer's line colour)
+    border: `2px solid ${errors[field] ? '#ffd1d1' : 'var(--ui-line)'}`,
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    color: '#ffffff',
+    color: 'var(--ui-ink)',
     fontFamily: 'Lato, sans-serif',
     fontSize: '1rem', // 16px stops iOS zooming in
     outline: 'none',
@@ -227,12 +230,12 @@ export default function ConnectPage({
             const content = (
               <>
                 <motion.span
-                  whileHover={{ scale: 1.08, backgroundColor: '#ffffff', color: brand }}
+                  whileHover={{ scale: 1.08, backgroundColor: accent, color: brand }}
                   whileTap={{ scale: 0.95 }}
                   transition={{ duration: 0.15 }}
                   style={{
                     ...roundButton,
-                    ...(b.pressed ? { backgroundColor: '#ffffff', color: brand } : {}),
+                    ...(b.pressed ? { backgroundColor: accent, color: brand } : {}),
                   }}
                 >
                   {b.icon}
@@ -243,7 +246,7 @@ export default function ConnectPage({
                     fontFamily: 'Lato, sans-serif',
                     fontSize: '0.875rem',
                     fontWeight: 700,
-                    color: '#ffffff',
+                    color: 'var(--ui-ink)',
                   }}
                 >
                   {b.label}
@@ -371,7 +374,7 @@ export default function ConnectPage({
                   padding: '0 1.75rem',
                   borderRadius: '999px',
                   border: 'none',
-                  backgroundColor: '#ffffff',
+                  backgroundColor: accent,
                   color: brand,
                   fontFamily: 'Lato, sans-serif',
                   fontWeight: 800,
@@ -405,7 +408,7 @@ export default function ConnectPage({
               borderRadius: '999px',
               // Dark tones keep white text above 7:1
               backgroundColor: toast.kind === 'ok' ? '#14532d' : '#7f1d1d',
-              color: '#ffffff',
+              color: 'var(--ui-ink)',
               fontFamily: 'Lato, sans-serif',
               fontWeight: 700,
               fontSize: '0.9375rem',

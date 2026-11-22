@@ -38,6 +38,16 @@ const creditsData = [
     author: 'Star Veb',
   },
   {
+    name: 'Hammock (low poly)',
+    url: 'https://sketchfab.com/3d-models/hammock-low-poly-c5fd4cef873f44f5a31db1fc6a04c572',
+    author: 'Andrey 3D',
+  },
+  {
+    name: 'Low Poly Beach Assets',
+    url: 'https://sketchfab.com/3d-models/low-poly-beach-assets-66c18ecd7a834d4a99dabc46b5ee6e4a',
+    author: 'EdwinRC',
+  },
+  {
     name: 'stylize clouds',
     url: 'https://sketchfab.com/3d-models/stylize-clouds-32ed464f19fe4acf86723eaff08dd568',
     author: 'ragad.sallabi',
@@ -92,7 +102,7 @@ export default function CreditsPopup({
   // Responsive popup styles
   const getPopupStyles = (): React.CSSProperties => {
     const baseStyles: React.CSSProperties = {
-      backgroundColor: isDarkMode ? '#162542' : '#00445e',
+      backgroundColor: isDarkMode ? '#162542' : '#0b3a73',
       borderRadius: '15px',
       boxShadow: isDarkMode
         ? '0 25px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 255, 255, 0.1)'
@@ -146,7 +156,7 @@ export default function CreditsPopup({
     return {
       fontSize,
       fontWeight: '700',
-      color: '#ffffff',
+      color: isDarkMode ? '#ffd36b' : '#ffffff', // title: yellow at night
       marginBottom: '10px',
       textAlign: 'center' as const,
       letterSpacing: '-0.02em',
@@ -167,7 +177,7 @@ export default function CreditsPopup({
     return {
       fontSize,
       fontWeight: '400',
-      color: '#ffffff',
+      color: isDarkMode ? '#fff1cc' : '#ffffff',
       marginBottom,
       textAlign: 'center' as const,
       lineHeight: '1.5',
@@ -187,7 +197,7 @@ export default function CreditsPopup({
       fontSize,
       marginBottom,
       lineHeight: '1.6',
-      color: '#ffffff',
+      color: isDarkMode ? '#fff1cc' : '#ffffff',
     };
   };
 
@@ -216,7 +226,7 @@ export default function CreditsPopup({
       padding,
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
       borderRadius: '12px',
-      color: '#ffffff',
+      color: isDarkMode ? '#fff1cc' : '#ffffff',
       lineHeight: '1.5',
     };
   };

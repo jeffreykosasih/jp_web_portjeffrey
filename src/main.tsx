@@ -4,7 +4,11 @@ import './index.css'; // Tailwind CSS
 import { motion, AnimatePresence } from 'framer-motion';
 
 import LazyScene from './components/LazyScene';
-import { PageNavContext, SubPage } from './components/PageSwitcher';
+import PageDock, { PhoneButtonBand, SubPage } from './components/PageSwitcher';
+import { DrawerInstantContext } from './components/SideDrawer';
+
+// Length of each half of the fade when switching between pages
+const FADE_MS = 280;
 import ThemeToggle from './components/ThemeToggle';
 import BurgerMenu from './components/BurgerMenu';
 import CreditsButton from './components/CreditsButton';
@@ -83,6 +87,28 @@ function App(): React.JSX.Element {
   >('right');
   const [triggerInitialZoom, setTriggerInitialZoom] = useState<boolean>(false);
 
+  // While a page drawer is open, the corner buttons gather on the free side
+  // of the screen (Profile and Projects open on the right, the others on
+  // the left). Order from the screen edge inward.
+  // Follows the page being opened (set on click), so the buttons don't
+  // flicker while one drawer closes and the next opens
+  const freeSide: 'left' | 'right' | null =
+    focusedPage === 'profile' || focusedPage === 'portfolio'
+      ? 'left'
+      : focusedPage === 'skillset' || focusedPage === 'connect'
+      ? 'right'
+      : null;
+  const dockFor = (button: 'credits' | 'sound' | 'theme') => {
+    if (!freeSide) return null;
+    const order =
+      freeSide === 'left'
+        ? ['credits', 'sound', 'theme']
+        : ['theme', 'sound', 'credits'];
+    // Portrait phones: credits, sound, theme take footer slots 4-6
+    const slot = 4 + ['credits', 'sound', 'theme'].indexOf(button);
+    return { side: freeSide, index: order.indexOf(button), slot };
+  };
+
   const toggleTheme = (): void => {
     setIsDarkMode((prevMode) => !prevMode);
   };
@@ -108,10 +134,35 @@ function App(): React.JSX.Element {
     }
   };
 
+  // Switching from one open page to another fades the screen out, jumps the
+  // camera and drawer while it's covered, then fades back in
+  const [isFadeCovering, setIsFadeCovering] = useState(false);
+  const [isInstantSwitch, setIsInstantSwitch] = useState(false);
+  const fadeTimers = useRef<number[]>([]);
+
+  const switchPageWithFade = (next: PageName) => {
+    fadeTimers.current.forEach((t) => window.clearTimeout(t));
+    // Set first, so the open drawer already knows to leave without sliding
+    setIsInstantSwitch(true);
+    setIsFadeCovering(true);
+    fadeTimers.current = [
+      window.setTimeout(() => {
+        setFocusedPage(next);
+        setActivePage(next);
+      }, FADE_MS),
+      window.setTimeout(() => setIsFadeCovering(false), FADE_MS + 160),
+      window.setTimeout(() => setIsInstantSwitch(false), FADE_MS * 2 + 400),
+    ];
+  };
+
   const openPage = (pageName: PageName): void => {
     setShouldAnimatePageText(true);
     if (pageOpenTimer.current) window.clearTimeout(pageOpenTimer.current);
     const next = pageName === 'home' ? null : pageName;
+    if (next && activePage && next !== activePage) {
+      switchPageWithFade(next);
+      return;
+    }
     setFocusedPage(next);
     if (!next) {
       setActivePage(null);
@@ -188,7 +239,7 @@ function App(): React.JSX.Element {
       width: '100vw',
       height: '100dvh',
       position: 'relative' as const,
-      backgroundColor: isDarkMode ? '#162542' : '#005E80',
+      backgroundColor: isDarkMode ? '#162542' : '#12508f',
     };
 
     // Add safe area padding for mobile devices
@@ -211,7 +262,7 @@ function App(): React.JSX.Element {
       fontFamily: 'Lato, sans-serif',
       fontWeight: '700' as const,
       // Deep teal on the light day sky, white on the night sky: both 7:1+
-      color: isDarkMode ? '#ffffff' : '#00334a',
+      color: isDarkMode ? '#ffd36b' : '#0a2d57',
       pointerEvents: 'none' as const,
       userSelect: 'none' as const,
       zIndex: 1000,
@@ -332,7 +383,7 @@ function App(): React.JSX.Element {
                 position: 'relative',
                 background: isDarkMode
                   ? 'linear-gradient(to bottom, #162542 0%, #020918 100%)'
-                  : 'linear-gradient(to bottom, #005E80 0%, #005E80 100%)',
+                  : 'linear-gradient(to bottom, #12508f 0%, #12508f 100%)',
               }}
             >
               {/* Name in top left corner */}
@@ -355,6 +406,7 @@ function App(): React.JSX.Element {
                 onPlayClickSound={playClickSound}
                 isBurgerMenuOpen={isBurgerMenuOpen}
                 triggerInitialZoom={triggerInitialZoom}
+                snapCamera={isInstantSwitch}
                 focusPage={focusedPage}
                 showHomeButtons={
                   focusedPage === null &&
@@ -388,6 +440,7 @@ function App(): React.JSX.Element {
                     }}
                     isHidden={isThemeToggleHidden}
                     deviceInfo={deviceInfo}
+                    dock={dockFor('theme')}
                   />
                 </motion.div>
 
@@ -405,6 +458,7 @@ function App(): React.JSX.Element {
                     }}
                     isHidden={isCreditsButtonHidden}
                     deviceInfo={deviceInfo}
+                    dock={dockFor('credits')}
                   />
                 </motion.div>
 
@@ -423,6 +477,7 @@ function App(): React.JSX.Element {
                     }}
                     isHidden={isCreditsButtonHidden}
                     deviceInfo={deviceInfo}
+                    dock={dockFor('sound')}
                   />
                 </motion.div>
 
@@ -448,14 +503,8 @@ function App(): React.JSX.Element {
                 </motion.div>
               </div>
 
-              {/* Page Components (they share the page switcher context) */}
-              <PageNavContext.Provider
-                value={{
-                  activePage: activePage as SubPage | null,
-                  openPage: (page) => openPage(page),
-                  onPlayClickSound: playClickSound,
-                }}
-              >
+              {/* Page Components (drawers skip their slide during a fade switch) */}
+              <DrawerInstantContext.Provider value={isInstantSwitch}>
               <ProfilePage
                 isVisible={activePage === 'profile'}
                 onClose={closePage}
@@ -490,7 +539,47 @@ function App(): React.JSX.Element {
                 shouldAnimateText={shouldAnimatePageText}
                 deviceInfo={deviceInfo}
               />
-              </PageNavContext.Provider>
+              </DrawerInstantContext.Provider>
+
+              {/* Fade cover used when switching between pages */}
+              <AnimatePresence>
+                {isFadeCovering && (
+                  <motion.div
+                    key='page-fade'
+                    aria-hidden='true'
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: FADE_MS / 1000, ease: 'easeInOut' }}
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      zIndex: 1700,
+                      backgroundColor: isDarkMode ? '#101c34' : '#0b3a73',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+              </AnimatePresence>
+
+              {/* Portrait phones: a band behind the bottom row of buttons */}
+              <PhoneButtonBand
+                freeSide={freeSide}
+                isDarkMode={isDarkMode}
+                deviceInfo={deviceInfo}
+              />
+
+              {/* Page buttons beside the corner buttons while a page is open */}
+              <PageDock
+                activePage={focusedPage as SubPage | null}
+                freeSide={freeSide}
+                isDarkMode={isDarkMode}
+                deviceInfo={deviceInfo}
+                onOpen={(page) => {
+                  playClickSound();
+                  openPage(page);
+                }}
+              />
 
               {/* Credits Popup */}
               <MemoizedCreditsPopup

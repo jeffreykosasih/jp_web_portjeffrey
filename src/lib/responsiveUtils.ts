@@ -174,11 +174,13 @@ export const mediaQueries = {
 export const ColorSchemes = {
   primary: {
     dark: '#162542',
-    light: '#005E80',
+    light: '#12508f',
   },
   accent: {
     yellow: '#FFEEA9',
     cream: '#FAF1E6',
+    // Night accent: dark mode is navy and yellow, as bright mode is blue and white
+    night: '#ffd36b',
   },
   text: {
     primary: '#ffffff',
@@ -188,18 +190,16 @@ export const ColorSchemes = {
 } as const;
 
 // Button styling helper
-export const getButtonColors = (isDarkMode: boolean, isHovered: boolean) => ({
-  backgroundColor: isHovered
-    ? ColorSchemes.text.primary
-    : isDarkMode
-    ? ColorSchemes.primary.dark
-    : ColorSchemes.primary.light,
-  color: isHovered
-    ? isDarkMode
-      ? ColorSchemes.primary.dark
-      : ColorSchemes.primary.light
-    : ColorSchemes.text.primary,
-});
+// Bright mode: blue with white icons (white when hovered).
+// Dark mode: navy with yellow icons (yellow when hovered).
+export const getButtonColors = (isDarkMode: boolean, isHovered: boolean) => {
+  const accent = isDarkMode ? ColorSchemes.accent.night : ColorSchemes.text.primary;
+  const base = isDarkMode ? ColorSchemes.primary.dark : ColorSchemes.primary.light;
+  return {
+    backgroundColor: isHovered ? accent : base,
+    color: isHovered ? base : accent,
+  };
+};
 
 // Animation transitions
 export const Transitions = {
