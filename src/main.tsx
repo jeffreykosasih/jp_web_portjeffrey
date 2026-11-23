@@ -267,12 +267,8 @@ function App(): React.JSX.Element {
       // Display voice: the joined-up script (see .type-display)
       fontFamily: "'Playwrite AU NSW', 'Baloo 2', cursive",
       fontWeight: '400' as const,
-      // White by day, like the page picker, with a navy halo so it reads on
-      // the pale sky; yellow at night
+      // White by day, like the page picker; yellow at night. No shadow.
       color: isDarkMode ? '#ffd36b' : '#ffffff',
-      textShadow: isDarkMode
-        ? '0 2px 0 rgba(5, 12, 26, 0.9), 0 0 14px rgba(5, 12, 26, 0.7)'
-        : '0 2px 0 #0a2d57, 0 0 14px rgba(10, 45, 87, 0.85)',
       pointerEvents: 'none' as const,
       userSelect: 'none' as const,
       zIndex: 1000,

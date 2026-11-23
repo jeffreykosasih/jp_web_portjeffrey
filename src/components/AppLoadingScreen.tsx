@@ -15,13 +15,15 @@ interface AppLoadingScreenProps {
 const DOTS_DURATION = 800; // 0.8 seconds (faster loading)
 const TITLE_DELAY = 300; // shortly after dots fade out
 const BUTTON_DELAY = 600; // shortly after title appears
-// The button fades, then the tide (see Tide in main)
-// takes over in the same blue
-const TRANSITION_DURATION = 450;
+// The button fades and the title is wiped away (about 0.8s), then the tide
+// (see Tide in main) takes over in the same blue
+const TRANSITION_DURATION = 850;
 
 // Three layers of waves rolling along the bottom of the welcome screen.
 // Each path repeats every half width, so sliding it by 50% loops seamlessly.
-function OpeningWaves({ isDarkMode }: { isDarkMode: boolean }) {
+// On the way out (`leaving`) the waves ebb away, sinking down one layer after
+// another from the front.
+function OpeningWaves({ isDarkMode, leaving = false }: { isDarkMode: boolean; leaving?: boolean }) {
   const layers = isDarkMode
     ? ['#1c2f55', '#22396a', '#2b467c']
     : ['#1a5fa6', '#2b77c0', '#3f91d8'];
@@ -42,21 +44,27 @@ function OpeningWaves({ isDarkMode }: { isDarkMode: boolean }) {
       }}
     >
       {layers.map((color, i) => (
-        <svg
+        <div
           key={color}
-          className={`opening-wave opening-wave-${i}`}
-          viewBox='0 0 1440 120'
-          preserveAspectRatio='none'
-          style={{
-            position: 'absolute',
-            left: 0,
-            bottom: 0,
-            width: '200%',
-            height: `${100 - i * 22}%`,
-          }}
+          className={leaving ? 'opening-wave-layer opening-wave-layer--out' : 'opening-wave-layer'}
+          // the front (last) layer leaves first
+          style={{ '--d': `${(layers.length - 1 - i) * 90}ms` } as React.CSSProperties}
         >
-          <path d={wave} fill={color} />
-        </svg>
+          <svg
+            className={`opening-wave opening-wave-${i}`}
+            viewBox='0 0 1440 120'
+            preserveAspectRatio='none'
+            style={{
+              position: 'absolute',
+              left: 0,
+              bottom: 0,
+              width: '200%',
+              height: `${100 - i * 22}%`,
+            }}
+          >
+            <path d={wave} fill={color} />
+          </svg>
+        </div>
       ))}
     </div>
   );
@@ -268,7 +276,7 @@ export default function AppLoadingScreen({
 
   return (
     <div style={containerStyles}>
-      <OpeningWaves isDarkMode={isDarkMode} />
+      <OpeningWaves isDarkMode={isDarkMode} leaving={isTransitioning} />
       <div style={{ ...contentStyles, zIndex: 1 }}>
         {/* Main Content Area */}
         <div
@@ -360,8 +368,8 @@ export default function AppLoadingScreen({
 
               {/* Title */}
               {showTitle && (
-                // The italic lead-in drifts up, then the name floats in
-                // letter by letter
+                // The lead-in drifts up and the name is written on; on the
+                // way out the lead-in drifts off and the name is wiped away
                 <motion.h1
                   key='title'
                   aria-label='Welcome to Port Jeffrey'
@@ -383,14 +391,19 @@ export default function AppLoadingScreen({
                           : 'var(--space-sm)',
                     }}
                   >
-                    <span className='drift-in' style={{ display: 'block' }}>Welcome to</span>
+                    <span
+                      className={isTransitioning ? 'drift-out' : 'drift-in'}
+                      style={{ display: 'block' }}
+                    >
+                      Welcome to
+                    </span>
                   </span>
                   {/* Joined-up school handwriting; it is written on from left
                       to right, as if by hand (split into letters it would
                       lose the joins between them) */}
                   <span
                     aria-hidden='true'
-                    className='write-on'
+                    className={isTransitioning ? 'write-off' : 'write-on'}
                     style={{
                       display: 'block',
                       fontFamily: "'Playwrite AU NSW', 'Baloo 2', cursive",

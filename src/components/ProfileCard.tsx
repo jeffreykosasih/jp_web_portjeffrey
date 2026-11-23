@@ -7,7 +7,6 @@ import React, {
 } from 'react';
 import './ProfileCard.css';
 import { PROFILE } from '../lib/profile';
-import { WriteOn, joinsAt } from './Letters';
 
 interface ProfileCardProps {
   avatarUrl?: string;
@@ -316,17 +315,6 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
           <div className='pc-shine' />
           <div className='pc-glare' />
 
-          <div className='pc-content'>
-            {/* Header with name and title - overlaid on image */}
-            <div className='pc-header'>
-              <h3 aria-label={name} className='type-display'>
-                <WriteOn text={name} startMs={450} durationMs={1000} />
-              </h3>
-              <p className='drift-in' style={joinsAt(750)}>
-                {title}
-              </p>
-            </div>
-          </div>
         </div>
       </section>
     </div>

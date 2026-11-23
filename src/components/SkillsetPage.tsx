@@ -30,8 +30,8 @@ import {
   SiAdobeillustrator,
   SiAdobepremierepro,
   SiAdobeaftereffects,
+  SiClaude,
 } from 'react-icons/si';
-import { SlCursor } from 'react-icons/sl';
 
 interface SkillsetPageProps {
   isVisible: boolean;
@@ -56,10 +56,10 @@ interface SkillItem {
 const skillsData: Record<SkillCategory, SkillItem[]> = {
   tools: [
     {
-      name: 'Cursor',
-      description: 'Primary code editor',
-      icon: SlCursor,
-      color: '#007ACC',
+      name: 'Claude',
+      description: 'AI partner for code and research',
+      icon: SiClaude,
+      color: '#D97757',
     },
     {
       name: 'Figma',

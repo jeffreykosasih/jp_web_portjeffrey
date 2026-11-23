@@ -127,51 +127,6 @@
   z-index: 2;
 }
 
-.pc-content {
-  position: relative;
-  z-index: 3;
-  padding: var(--space-2xl); /* 32px using CSS var */
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* Header section with name and title - at the top but centered */
-.pc-header {
-  text-align: center;
-  margin-bottom: auto;
-}
-
-/* Name in the site's display face: white by day, warm yellow at night */
-.pc-header h3 {
-  font-size: var(--text-4xl); /* 36px using CSS var */
-  font-weight: 400;
-  line-height: 1.15;
-  letter-spacing: 0.01em;
-  color: #ffffff;
-  margin: 0 0 var(--space-md) 0; /* room for the script's descenders */
-  text-shadow: 0 2px 0 rgba(5, 12, 26, 0.55), 0 var(--space-xs) var(--space-lg) rgba(0, 0, 0, 0.8);
-  font-family: 'Playwrite AU NSW', 'Baloo 2', cursive;
-}
-
-/* The name and the role follow the theme: white by day, yellow at night */
-.pc-dark .pc-header h3,
-.pc-dark .pc-header p {
-  color: #ffd36b;
-}
-
-.pc-header p {
-  font-size: var(--text-xl);
-  color: #ffffff;
-  margin: 0;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-shadow: 0 1px 0 rgba(5, 12, 26, 0.5), 0 var(--space-xs) var(--space-lg) rgba(0, 0, 0, 0.7);
-  font-family: 'Baloo 2', sans-serif;
-}
-
 @keyframes pulse {
   0%,
   100% {
@@ -188,19 +143,6 @@
     height: 25rem; /* Reduced height for mobile */
   }
 
-  .pc-content {
-    padding: var(--space-xl); /* 24px using CSS var */
-  }
-
-  .pc-header h3 {
-    font-size: var(--text-3xl); /* 30px using CSS var */
-    margin-bottom: var(--space-sm); /* 8px using CSS var */
-  }
-
-  .pc-header p {
-    font-size: var(--text-base); /* 16px using CSS var */
-  }
-
 }
 
 /* Mobile landscape - Desktop-like appearance */
@@ -214,21 +156,6 @@
     height: 24rem; /* Better proportions for landscape */
   }
 
-  .pc-content {
-    padding: var(--space-xl); /* 24px using CSS var */
-  }
-
-  .pc-header h3 {
-    font-size: var(
-      --text-4xl
-    ); /* 36px using CSS var - larger for desktop-like */
-    margin-bottom: var(--space-sm); /* 8px using CSS var */
-  }
-
-  .pc-header p {
-    font-size: var(--text-xl); /* 20px using CSS var - larger subtitle */
-  }
-
 }
 
 /* Mobile portrait specific adjustments */
@@ -240,21 +167,6 @@
   .pc-card {
     width: 100%;
     height: 26.25rem; /* Good height for portrait */
-  }
-
-  .pc-content {
-    padding: var(--space-lg); /* 20px - slightly reduced padding */
-  }
-
-  .pc-header h3 {
-    font-size: var(--text-2xl); /* 24px - smaller for portrait */
-    margin-bottom: var(--space-xs); /* 4px - tighter spacing */
-    line-height: 1.2;
-  }
-
-  .pc-header p {
-    font-size: var(--text-sm); /* 14px - smaller subtitle */
-    line-height: 1.4;
   }
 
 }
@@ -284,10 +196,5 @@
   .pc-card-wrapper.pc-compact .pc-card {
     height: 16rem;
   }
-  .pc-card-wrapper.pc-compact .pc-content {
-    padding: var(--space-base);
-  }
-  .pc-card-wrapper.pc-compact .pc-header h3 {
-    font-size: var(--text-xl);
-  }
+
 }

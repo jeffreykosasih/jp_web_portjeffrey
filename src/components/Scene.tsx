@@ -143,7 +143,6 @@ function InteractiveObject({
   sparkle?: boolean;
 }) {
   const timeoutRef = useRef<number | null>(null);
-  const [isHovered, setIsHovered] = useState(false);
   const objectRef = useRef<any>(null);
 
   const handlePointerEnter = useCallback(
@@ -154,7 +153,6 @@ function InteractiveObject({
         timeoutRef.current = null;
       }
       document.body.style.cursor = 'pointer';
-      setIsHovered(true);
       onHover(true);
     },
     [onHover]
@@ -165,7 +163,6 @@ function InteractiveObject({
       e.stopPropagation();
       // Remove timeout - keep brightness while cursor is on object
       document.body.style.cursor = 'default';
-      setIsHovered(false);
       onHover(false);
     },
     [onHover]
@@ -211,7 +208,10 @@ function InteractiveObject({
       )}
       <ObjectBrightness
         object={objectRef.current}
-        isHovered={isHovered || externalHovered}
+        // Hover comes from the scene, which clears it whenever a page opens
+        // or closes. (A hover kept here got stuck on: once a click opened a
+        // page, the pointer never "left" the landmark, so it stayed lit.)
+        isHovered={externalHovered}
         isLit={spotlight}
         isDarkMode={isDarkMode}
       />
@@ -423,15 +423,25 @@ function processSceneNode(
 // this table.
 const LANDMARK = {
   house: { x: 24, z: 10, ground: 0 },
-  desk: { x: -4, z: 10, ground: 0.5 },
+  desk: { x: -12, z: -17, ground: 0.5 }, // up front, on the right-hand grass
   chairs: { x: -28, z: 10, ground: 0.5 },
   dog: { x: -2, z: -39, ground: 1.0 }, // on the dock deck (measured ~0.97)
 } as const;
 
-// Lamps midway between the row's landmarks, plus one beside the chairs
+// The lighthouse stands in the middle of the back row, between the house and
+// the chairs, larger than the other props as the island's centrepiece
+const LIGHTHOUSE = {
+  x: (LANDMARK.house.x + LANDMARK.chairs.x) / 2,
+  z: LANDMARK.house.z + 4,
+  size: 28,
+};
+
+// A lamp post on each side of the lighthouse, halfway to the house and to the
+// chairs and a little forward so they frame the tower; plus one beside the
+// chairs
 const LAMPS: { position: [number, number, number]; rotation: number }[] = [
-  { position: [(LANDMARK.house.x + LANDMARK.desk.x) / 2, 0.5, LANDMARK.house.z], rotation: 1 },
-  { position: [(LANDMARK.desk.x + LANDMARK.chairs.x) / 2, 0.5, LANDMARK.desk.z], rotation: 5.5 },
+  { position: [(LANDMARK.house.x + LIGHTHOUSE.x) / 2, 0.5, LANDMARK.house.z - 4], rotation: 1 },
+  { position: [(LIGHTHOUSE.x + LANDMARK.chairs.x) / 2, 0.5, LANDMARK.chairs.z - 4], rotation: 5.5 },
   { position: [LANDMARK.chairs.x - 9, 0.5, LANDMARK.chairs.z - 2], rotation: 5.5 }, // beside the Connect chairs
 ];
 
@@ -728,6 +738,9 @@ const waterBob = (time: number, phase = 0) => Math.sin(time * 0.8 + phase) * 0.3
 const BOAT_HEADING = 1.27; // side-on, hook end pointing at the dock
 // Height that keeps the hull sitting on the water rather than in it
 const BOAT_WATERLINE = 0.8;
+// Moored beside the dock, clear of the shore (~5 m fishing boat)
+const BOAT_POSITION: [number, number, number] = [-16, 0.8, -49];
+const BOAT_SCALE = 6;
 
 function SimpleBoat({
   isDarkMode,
@@ -805,8 +818,8 @@ function SimpleBoat({
   return (
     <group
       ref={boatRef}
-      position={[-16, 0.8, -49]} // moored beside the dock, clear of the shore
-      scale={[6, 6, 6]} // ~5 m fishing boat
+      position={BOAT_POSITION}
+      scale={[BOAT_SCALE, BOAT_SCALE, BOAT_SCALE]}
       rotation={[0, BOAT_HEADING, 0]}
     >
       <group position={boatCenter}>
@@ -986,18 +999,12 @@ function SimpleDog({ isDarkMode }: { isDarkMode: boolean }) {
       if (!child.isMesh) return;
       child.frustumCulled = false;
       child.material = child.material.clone();
+      // No glow of its own: like the other landmarks it lights up only when
+      // hovered, chosen on the island, or while its page (Profile) is open
       const material = child.material;
-      if (isDarkMode) {
-        // Light the texture from within, warm like a lantern
-        material.emissive?.set?.('#ffcf7a');
-        if (material.map) material.emissiveMap = material.map;
-        material.emissiveIntensity = 1.15;
-        material.color.multiplyScalar(0.6);
-      } else {
-        material.emissive?.setHex?.(0x000000);
-        material.emissiveIntensity = 0;
-        material.roughness = 0.8;
-      }
+      material.emissive?.setHex?.(0x000000);
+      material.emissiveIntensity = 0;
+      material.roughness = 0.8;
       material.needsUpdate = true;
     });
     return fitToSize(processed, 4); // a large dog, slightly over life size
@@ -1011,26 +1018,6 @@ function SimpleDog({ isDarkMode }: { isDarkMode: boolean }) {
       rotation={[0, 2.6, 0]} // facing the viewer, down the dock
     >
       <primitive object={object} />
-      {isDarkMode && (
-        <>
-          <pointLight
-            position={[0, 2.5, -1.5]}
-            color='#ffc66b'
-            intensity={45}
-            distance={18}
-            decay={1.6}
-          />
-          <sprite position={[0, 1.5, 0]} scale={[7, 7, 1]}>
-            <spriteMaterial
-              map={getHaloTexture()}
-              transparent
-              depthWrite={false}
-              blending={THREE.AdditiveBlending}
-              opacity={0.55}
-            />
-          </sprite>
-        </>
-      )}
     </group>
   );
 }
@@ -1176,8 +1163,8 @@ type IslandProp = {
   beacon?: number; // height of a lighthouse lamp above the ground, in units
 };
 
-// The lighthouse lamp sits this high in the 20-unit model
-const BEACON_HEIGHT = 16.2;
+// Height of the lighthouse lamp, scaled with the tower
+const BEACON_HEIGHT = 16.2 * (LIGHTHOUSE.size / 20); // 16.2 in the 20-unit model
 
 // Soft round glow (white centre fading to nothing), drawn once and shared
 let glowTexture: THREE.CanvasTexture | null = null;
@@ -1198,13 +1185,13 @@ function getGlowTexture() {
   return glowTexture;
 }
 
-// Lighthouse lamp: the lantern glass shines bright and steady, with a soft
-// glow around it that breathes slowly. Softer by day; at night it is
-// brighter and lights the island around it.
-function LighthouseBeacon({ isDarkMode }: { isDarkMode: boolean }) {
+// Lighthouse lamp (night only): the lantern glass shines bright and steady,
+// with a soft glow around it that breathes slowly, and it lights the island
+// around it.
+function LighthouseBeacon() {
   const glow = useRef<THREE.Sprite>(null);
   const texture = useMemo(() => getGlowTexture(), []);
-  const base = isDarkMode ? 13 : 11;
+  const base = 13;
   useFrame(({ clock }) => {
     if (glow.current) glow.current.scale.setScalar(base * (1 + Math.sin(clock.getElapsedTime() * 1.1) * 0.06));
   });
@@ -1214,7 +1201,7 @@ function LighthouseBeacon({ isDarkMode }: { isDarkMode: boolean }) {
       <sprite scale={[3.6, 3.6, 1]} renderOrder={10}>
         <spriteMaterial
           map={texture}
-          color={isDarkMode ? '#fff4c8' : '#ffffff'}
+          color='#fff4c8'
           transparent
           depthTest={false}
           depthWrite={false}
@@ -1227,7 +1214,7 @@ function LighthouseBeacon({ isDarkMode }: { isDarkMode: boolean }) {
         <spriteMaterial
           map={texture}
           color='#ffe9a8'
-          opacity={isDarkMode ? 0.75 : 0.65}
+          opacity={0.75}
           transparent
           depthTest={false}
           depthWrite={false}
@@ -1235,14 +1222,14 @@ function LighthouseBeacon({ isDarkMode }: { isDarkMode: boolean }) {
           toneMapped={false}
         />
       </sprite>
-      {isDarkMode && <pointLight color='#ffe2a0' intensity={160} distance={40} decay={1.4} />}
+      <pointLight color='#ffe2a0' intensity={160} distance={40} decay={1.4} />
     </group>
   );
 }
 
 const ISLAND_PROPS: IslandProp[] = [
-  // lighthouse at the back of the island, behind the row
-  { file: 'lighthouse', size: 20, position: [8, 0, 32], heading: 3.4, beacon: BEACON_HEIGHT },
+  // lighthouse in the middle of the back row (see LIGHTHOUSE)
+  { file: 'lighthouse', size: LIGHTHOUSE.size, position: [LIGHTHOUSE.x, 0, LIGHTHOUSE.z], heading: 3.4, beacon: BEACON_HEIGHT },
   // red and white umbrella over the Connect chairs' side
   { file: 'umbrella', size: 7, position: [-19, 0, 2], heading: 0.3 },
   // surfboard and barrel by the house porch
@@ -1255,10 +1242,10 @@ const ISLAND_PROPS: IslandProp[] = [
   { file: 'sandcastle', size: 5, position: [20, 0, -23], heading: 3.3 },
   { file: 'gull', size: 2.8, position: [24, 0, -15], heading: 2.4 },
   // beach ball on the front right grass, chest by the hammock
-  { file: 'beachball', size: 1.4, position: [-13, 0, -13] },
+  { file: 'beachball', size: 1.4, position: [-3, 0, -6] },
   { file: 'chest', size: 3.2, position: [-31, 0, -13], heading: 3.6 },
   // crab on the front right grass, life ring on the dock deck
-  { file: 'crab', size: 2, position: [-12, 0, -24], heading: 3.0 },
+  { file: 'crab', size: 2, position: [-22, 0, -26], heading: 3.0 },
   { file: 'lifering', size: 2.4, position: [0.5, 0, -37] },
   // swim tube floating off the front of the island
   { file: 'tube', size: 3.4, position: [14, -1.9, -52], float: true },
@@ -1316,9 +1303,10 @@ function IslandPropModel({
         position={prop.position}
         rotation={[0, prop.heading ?? 0, 0]}
       />
-      {prop.beacon !== undefined && (
+      {/* the lighthouse lamp is only lit at night */}
+      {prop.beacon !== undefined && isDarkMode && (
         <group ref={beaconRef} position={[prop.position[0], prop.beacon, prop.position[2]]}>
-          <LighthouseBeacon isDarkMode={isDarkMode} />
+          <LighthouseBeacon />
         </group>
       )}
       {/* firelight at night */}
