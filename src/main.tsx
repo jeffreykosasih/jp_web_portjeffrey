@@ -19,6 +19,7 @@ import SkillsetPage from './components/SkillsetPage';
 import PortfolioPage from './components/PortfolioPage';
 import ConnectPage from './components/ConnectPage';
 import AppLoadingScreen from './components/AppLoadingScreen';
+import { Tide, WriteOn } from './components/Letters';
 import ClickSpark from './components/ClickSpark';
 
 import OceanAudio from './components/OceanAudio';
@@ -74,6 +75,8 @@ function App(): React.JSX.Element {
     useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showMainApp, setShowMainApp] = useState<boolean>(false);
+  // The tide that washes the opening screen off the island
+  const [showTide, setShowTide] = useState<boolean>(false);
   const [isThemeToggleHidden, setIsThemeToggleHidden] =
     useState<boolean>(false);
   const [isCreditsButtonHidden, setIsCreditsButtonHidden] =
@@ -207,6 +210,8 @@ function App(): React.JSX.Element {
   };
 
   const handleExploreClick = (): void => {
+    setShowTide(true);
+    window.setTimeout(() => setShowTide(false), 1700); // the tide is out by 1.5s
     setShowMainApp(true);
     setShouldDelayHomeButtonsOnce(true);
     setTriggerInitialZoom(true); // Trigger the zoom animation
@@ -259,10 +264,15 @@ function App(): React.JSX.Element {
   const nameTextStyles = React.useMemo(() => {
     const baseStyles = {
       position: 'fixed' as const,
-      fontFamily: 'Lato, sans-serif',
-      fontWeight: '700' as const,
-      // Deep teal on the light day sky, white on the night sky: both 7:1+
-      color: isDarkMode ? '#ffd36b' : '#0a2d57',
+      // Display voice: the joined-up script (see .type-display)
+      fontFamily: "'Playwrite AU NSW', 'Baloo 2', cursive",
+      fontWeight: '400' as const,
+      // White by day, like the page picker, with a navy halo so it reads on
+      // the pale sky; yellow at night
+      color: isDarkMode ? '#ffd36b' : '#ffffff',
+      textShadow: isDarkMode
+        ? '0 2px 0 rgba(5, 12, 26, 0.9), 0 0 14px rgba(5, 12, 26, 0.7)'
+        : '0 2px 0 #0a2d57, 0 0 14px rgba(10, 45, 87, 0.85)',
       pointerEvents: 'none' as const,
       userSelect: 'none' as const,
       zIndex: 1000,
@@ -387,13 +397,12 @@ function App(): React.JSX.Element {
               }}
             >
               {/* Name in top left corner */}
+              {/* written on as the tide goes out */}
               <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.5 }}
+                aria-label={PROFILE.name}
                 style={nameTextStyles}
               >
-                {PROFILE.name}
+                <WriteOn text={PROFILE.name} startMs={800} durationMs={1000} />
               </motion.div>
 
               <MemoizedLazyScene
@@ -509,7 +518,6 @@ function App(): React.JSX.Element {
                 isVisible={activePage === 'profile'}
                 onClose={closePage}
                 onOpenBurgerMenu={openBurgerMenu}
-                onNavigate={openPage}
                 isDarkMode={isDarkMode}
                 shouldAnimateText={shouldAnimatePageText}
                 deviceInfo={deviceInfo}
@@ -591,6 +599,10 @@ function App(): React.JSX.Element {
             </div>
           </ClickSpark>
         </motion.div>
+      )}
+
+      {showTide && (
+        <Tide color={isDarkMode ? '#162542' : '#12508f'} />
       )}
 
       {/* Loading Screen - Overlaid on top */}

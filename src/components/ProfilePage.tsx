@@ -9,7 +9,6 @@ interface ProfilePageProps {
   isVisible: boolean;
   onClose: () => void;
   onOpenBurgerMenu: (slideDirection?: 'left' | 'right') => void;
-  onNavigate: (page: 'connect') => void;
   isDarkMode: boolean;
   shouldAnimateText?: boolean;
   deviceInfo?: DeviceInfo;
@@ -20,7 +19,6 @@ interface ProfilePageProps {
 export default function ProfilePage({
   isVisible,
   onClose,
-  onNavigate,
   isDarkMode,
   shouldAnimateText = true,
   deviceInfo,
@@ -61,7 +59,7 @@ export default function ProfilePage({
           <p
             style={{
               margin: 0,
-              fontFamily: 'Lato, sans-serif',
+              fontFamily: "'Baloo 2', sans-serif",
               fontSize: sideBySide ? '1rem' : device === 'mobile-portrait' ? '1.0625rem' : '1.25rem',
               lineHeight: 1.6,
               color: 'var(--ui-ink)',
@@ -80,8 +78,6 @@ export default function ProfilePage({
             isDarkMode={isDarkMode}
             name={PROFILE.name}
             title={PROFILE.role}
-            contactText='Contact Me'
-            onNavigate={onNavigate}
           />
         </motion.div>
       </div>

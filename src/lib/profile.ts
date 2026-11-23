@@ -3,7 +3,7 @@
 
 export const PROFILE = {
   name: 'Jeffrey Ko',
-  role: 'UI/UX designer & front-end developer',
+  role: 'UX/UI Designer',
   email: 'jefpkos@gmail.com',
 } as const;
 

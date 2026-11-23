@@ -7,11 +7,11 @@ import React, {
   useMemo,
 } from 'react';
 import { Canvas, useFrame, ThreeEvent, useThree } from '@react-three/fiber';
-import { PerspectiveCamera, useGLTF } from '@react-three/drei';
+import { PerspectiveCamera, Sparkles, useGLTF } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import ObjectPopupMenu from './ObjectPopupMenu';
+import PageCarousel, { type CarouselPage } from './PageCarousel';
 
 interface SceneProps {
   isDarkMode: boolean;
@@ -122,6 +122,9 @@ function ObjectBrightness({
   return null;
 }
 
+// Sparkle size (drei's Sparkles scale it by distance from the camera)
+const SPARKLE_SIZE = 70;
+
 function InteractiveObject({
   children,
   onHover,
@@ -132,7 +135,13 @@ function InteractiveObject({
   isDarkMode,
   externalHovered = false,
   spotlight = false,
-}: InteractiveObjectProps & { isDarkMode?: boolean; spotlight?: boolean }) {
+  sparkle = false,
+}: InteractiveObjectProps & {
+  isDarkMode?: boolean;
+  spotlight?: boolean;
+  /** Daytime highlight for the page chosen on the island: drifting sparkles */
+  sparkle?: boolean;
+}) {
   const timeoutRef = useRef<number | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const objectRef = useRef<any>(null);
@@ -187,6 +196,17 @@ function InteractiveObject({
           intensity={isDarkMode ? 260 : 140}
           distance={34}
           decay={1.5}
+        />
+      )}
+      {sparkle && !isDarkMode && (
+        <Sparkles
+          position={position}
+          scale={[boundingBox[0] * 1.5, boundingBox[1] * 1.4, boundingBox[2] * 1.5]}
+          count={32}
+          size={SPARKLE_SIZE}
+          speed={0.45}
+          noise={0.6}
+          color='#fff3b8'
         />
       )}
       <ObjectBrightness
@@ -1042,17 +1062,6 @@ function SimpleComputerDesk({ isDarkMode }: { isDarkMode: boolean }) {
 // How far out the shoreline sits, as a share of the island model's radius
 const SHORE_FIT = 0.86;
 
-// Small set dressing so the island feels lived in. Props come from one
-// pack (Low Poly Beach Assets) and are picked out by name; each is sized to
-// a real-world size on the island's ruler (~3 units per metre).
-type PropSpot = {
-  name: string; // node name in the pack
-  size: number; // largest side, in units
-  position: [number, number, number];
-  rotation?: [number, number, number];
-  float?: boolean; // sits on the water rather than the ground
-};
-
 // Island surfaces a prop can stand on (the ground, rocks, the dock)
 const GROUND_MATERIALS = new Set(['Grass_2', 'Island_Rocks', 'Port_Wood']);
 
@@ -1073,53 +1082,45 @@ function groundHeight(scene: THREE.Object3D, x: number, z: number): number | nul
   return hit ? hit.point.y : null;
 }
 
-// Once the island is in the scene, drop each land prop onto the ground
+// Ground heights already found, by position. The island is remounted when
+// the theme changes, so without this a prop would drop to y = 0 and pop
+// back up a moment later.
+const GROUND_CACHE = new Map<string, number>();
+
+// Once the island is in the scene, set each land prop on the ground
 function useSnapToGround(
   refs: React.MutableRefObject<(THREE.Object3D | null)[]>,
-  spots: { position: [number, number, number]; float?: boolean }[]
+  spots: { position: [number, number, number] }[]
 ) {
   const { scene } = useThree();
-  useEffect(() => {
+  React.useLayoutEffect(() => {
     let tries = 0;
-    const timer = window.setInterval(() => {
+    const place = () => {
       scene.updateMatrixWorld(true);
       let placed = 0;
       spots.forEach((spot, i) => {
         const obj = refs.current[i];
-        if (!obj || spot.float) return placed++;
-        const y = groundHeight(scene, spot.position[0], spot.position[2]);
+        if (!obj) return;
+        const key = `${spot.position[0]},${spot.position[2]}`;
+        let y = GROUND_CACHE.get(key) ?? null;
+        if (y === null) {
+          y = groundHeight(scene, spot.position[0], spot.position[2]);
+          if (y !== null) GROUND_CACHE.set(key, y);
+        }
         if (y !== null) {
           obj.position.y = y;
           placed++;
         }
       });
-      if (placed === spots.length || ++tries > 40) window.clearInterval(timer);
+      return placed === spots.length;
+    };
+    if (place()) return;
+    const timer = window.setInterval(() => {
+      if (place() || ++tries > 40) window.clearInterval(timer);
     }, 150);
     return () => window.clearInterval(timer);
   }, [scene, refs, spots]);
 }
-
-// All land props sit inside the fence (about 33-40 units from the centre)
-// and out of the camera's routes to the four landmarks. Their height comes
-// from the ground under them at runtime (see snapToGround), so they always
-// stand on the island; the swim rings float on the water instead.
-const BEACH_PROPS: PropSpot[] = [
-  // surfboards leaning by the left side of the house porch
-  { name: 'SURFBOARD', size: 6.6, position: [29, 0, -4], rotation: [0, 0.3, 0] },
-  { name: 'SURFBOARD2', size: 6.6, position: [31.5, 0, -1.5], rotation: [0, 0.6, 0] },
-  // cooler beside the beach chairs
-  { name: 'FRIDGE', size: 2, position: [-21, 0, 3], rotation: [0, 0.4, 0] },
-  // picnic spot on the front-right grass, by the hammock
-  { name: 'UMBRELLA1', size: 6.6, position: [-13, 0, -24], rotation: [0, 0.4, 0] },
-  { name: 'TOWEL1', size: 5.4, position: [-10, 0, -27.5], rotation: [0, 0.4, 0] },
-  { name: 'BALL', size: 1.2, position: [-17, 0, -14] },
-  // volleyball net and ball behind the row
-  { name: 'VOLLEYBALL2', size: 16, position: [11, 0, 33], rotation: [0, 0, 0] },
-  { name: 'VOLLEYBALL1', size: 1.3, position: [5, 0, 27] },
-  // swim rings floating in the water (not snapped to land)
-  { name: 'FLOAT1', size: 3.4, position: [-30, -1.9, -47], float: true },
-  { name: 'FLOAT2', size: 3.4, position: [14, -1.9, -52], float: true },
-];
 
 function shadeForTime(material: any, isDarkMode: boolean) {
   if (!material?.color) return;
@@ -1128,82 +1129,219 @@ function shadeForTime(material: any, isDarkMode: boolean) {
   material.needsUpdate = true;
 }
 
-function BeachProps({ isDarkMode }: { isDarkMode: boolean }) {
-  const { scene } = useGLTF('/models/object_beach_props.glb');
-  const props = useMemo(() => {
-    scene.updateMatrixWorld(true);
-    return BEACH_PROPS.map((spot) => {
-      const source = scene.getObjectByName(spot.name);
-      if (!source) return null;
-      // Copy the prop with its world transform baked in, then size it
-      const copy = source.clone(true);
-      copy.applyMatrix4(source.parent!.matrixWorld);
-      copy.traverse((child: any) => {
-        if (!child.isMesh) return;
-        child.material = child.material.clone();
-        shadeForTime(child.material, isDarkMode);
-      });
-      return { spot, object: fitToSize(copy, spot.size) };
-    }).filter(Boolean) as { spot: PropSpot; object: THREE.Group }[];
-  }, [scene, isDarkMode]);
-
-  const refs = useRef<(THREE.Object3D | null)[]>([]);
-  const spots = useMemo(() => props.map((p) => p.spot), [props]);
-  useSnapToGround(refs, spots);
-
-  // Floating props (the duck swim rings) bob at the boat's speed, each a
-  // little out of step with the boat
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    spots.forEach((spot, i) => {
-      const obj = refs.current[i];
-      if (spot.float && obj) obj.position.y = spot.position[1] + waterBob(t, 0.9 + i * 0.7);
-    });
-  });
-
-  return (
-    <group>
-      {props.map(({ spot, object }, i) => (
-        <primitive
-          key={spot.name}
-          ref={(el: THREE.Object3D | null) => {
-            refs.current[i] = el; // no return: React 19 would treat it as a cleanup
-          }}
-          object={object}
-          position={spot.position}
-          rotation={spot.rotation ?? [0, 0, 0]}
-        />
-      ))}
-    </group>
-  );
-}
-
 // Hammock (Andrey 3D), sized to about 3.5 m long
 const HAMMOCK = { position: [-24, 0, -21] as [number, number, number], heading: 0.4, size: 10.5 };
 const HAMMOCK_SPOTS = [{ position: HAMMOCK.position }];
 
 function SimpleHammock({ isDarkMode }: { isDarkMode: boolean }) {
   const { scene } = useGLTF('/models/object_hammock.glb');
+  // Built once; a theme change only recolours it, so it never moves
   const object = useMemo(() => {
     const copy = scene.clone(true);
     copy.traverse((child: any) => {
-      if (!child.isMesh) return;
-      child.material = child.material.clone();
-      shadeForTime(child.material, isDarkMode);
+      if (child.isMesh) child.material = child.material.clone();
     });
     return fitToSize(copy, HAMMOCK.size);
-  }, [scene, isDarkMode]);
+  }, [scene]);
+  useEffect(() => {
+    object.traverse((child: any) => {
+      if (child.isMesh) shadeForTime(child.material, isDarkMode);
+    });
+  }, [object, isDarkMode]);
   const refs = useRef<(THREE.Object3D | null)[]>([]);
   useSnapToGround(refs, HAMMOCK_SPOTS);
   return (
     <primitive
       ref={(el: THREE.Object3D | null) => {
-            refs.current[0] = el; // no return: React 19 would treat it as a cleanup
-          }}
+        refs.current[0] = el; // no return: React 19 would treat it as a cleanup
+      }}
       object={object}
       position={HAMMOCK.position}
       rotation={[0, HAMMOCK.heading, 0]}
     />
+  );
+}
+
+// Set dressing from Poly Pizza (see Credits), each sized on the island's
+// ruler (~3 units per metre) and kept inside the fence, off the camera's
+// routes to the four landmarks. Land props are set on the ground at
+// runtime; floating ones bob on the water like the boat.
+type IslandProp = {
+  file: string;
+  size: number; // largest side, in units
+  position: [number, number, number];
+  heading?: number;
+  float?: boolean;
+  fire?: boolean; // glows and lights its surroundings at night
+  beacon?: number; // height of a lighthouse lamp above the ground, in units
+};
+
+// The lighthouse lamp sits this high in the 20-unit model
+const BEACON_HEIGHT = 16.2;
+
+// Soft round glow (white centre fading to nothing), drawn once and shared
+let glowTexture: THREE.CanvasTexture | null = null;
+function getGlowTexture() {
+  if (glowTexture) return glowTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d')!;
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  g.addColorStop(0.18, 'rgba(255, 248, 220, 0.85)');
+  g.addColorStop(0.45, 'rgba(255, 236, 170, 0.3)');
+  g.addColorStop(1, 'rgba(255, 230, 150, 0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  glowTexture = new THREE.CanvasTexture(canvas);
+  glowTexture.colorSpace = THREE.SRGBColorSpace;
+  return glowTexture;
+}
+
+// Lighthouse lamp: the lantern glass shines bright and steady, with a soft
+// glow around it that breathes slowly. Softer by day; at night it is
+// brighter and lights the island around it.
+function LighthouseBeacon({ isDarkMode }: { isDarkMode: boolean }) {
+  const glow = useRef<THREE.Sprite>(null);
+  const texture = useMemo(() => getGlowTexture(), []);
+  const base = isDarkMode ? 13 : 11;
+  useFrame(({ clock }) => {
+    if (glow.current) glow.current.scale.setScalar(base * (1 + Math.sin(clock.getElapsedTime() * 1.1) * 0.06));
+  });
+  return (
+    <group>
+      {/* the lantern glass: a bright core showing through the windows */}
+      <sprite scale={[3.6, 3.6, 1]} renderOrder={10}>
+        <spriteMaterial
+          map={texture}
+          color={isDarkMode ? '#fff4c8' : '#ffffff'}
+          transparent
+          depthTest={false}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+        />
+      </sprite>
+      {/* the glow around it */}
+      <sprite ref={glow} scale={[base, base, 1]} renderOrder={9}>
+        <spriteMaterial
+          map={texture}
+          color='#ffe9a8'
+          opacity={isDarkMode ? 0.75 : 0.65}
+          transparent
+          depthTest={false}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+        />
+      </sprite>
+      {isDarkMode && <pointLight color='#ffe2a0' intensity={160} distance={40} decay={1.4} />}
+    </group>
+  );
+}
+
+const ISLAND_PROPS: IslandProp[] = [
+  // lighthouse at the back of the island, behind the row
+  { file: 'lighthouse', size: 20, position: [8, 0, 32], heading: 3.4, beacon: BEACON_HEIGHT },
+  // red and white umbrella over the Connect chairs' side
+  { file: 'umbrella', size: 7, position: [-19, 0, 2], heading: 0.3 },
+  // surfboard and barrel by the house porch
+  { file: 'surfboard', size: 6.6, position: [29, 0, -9], heading: 2.6 },
+  { file: 'barrel', size: 2.8, position: [33, 0, 4], heading: 0.5 },
+  // campfire and tiki head in the front middle
+  { file: 'campfire', size: 5, position: [8, 0, -15], fire: true },
+  { file: 'tiki', size: 5, position: [14, 0, -10], heading: 3.4 },
+  // sand castle on the front left, a gull by the house
+  { file: 'sandcastle', size: 5, position: [20, 0, -23], heading: 3.3 },
+  { file: 'gull', size: 2.8, position: [24, 0, -15], heading: 2.4 },
+  // beach ball on the front right grass, chest by the hammock
+  { file: 'beachball', size: 1.4, position: [-13, 0, -13] },
+  { file: 'chest', size: 3.2, position: [-31, 0, -13], heading: 3.6 },
+  // crab on the front right grass, life ring on the dock deck
+  { file: 'crab', size: 2, position: [-12, 0, -24], heading: 3.0 },
+  { file: 'lifering', size: 2.4, position: [0.5, 0, -37] },
+  // swim tube floating off the front of the island
+  { file: 'tube', size: 3.4, position: [14, -1.9, -52], float: true },
+];
+
+function IslandPropModel({
+  prop,
+  index,
+  isDarkMode,
+}: {
+  prop: IslandProp;
+  index: number;
+  isDarkMode: boolean;
+}) {
+  const { scene } = useGLTF(`/models/props/${prop.file}.glb`);
+  // Built once; a theme change only recolours it, so it never moves
+  const object = useMemo(() => {
+    const copy = scene.clone(true);
+    copy.traverse((child: any) => {
+      if (!child.isMesh) return;
+      child.material = child.material.clone();
+      child.castShadow = false;
+    });
+    return fitToSize(copy, prop.size);
+  }, [scene, prop.size]);
+  useEffect(() => {
+    object.traverse((child: any) => {
+      if (!child.isMesh) return;
+      shadeForTime(child.material, isDarkMode);
+      if (prop.fire && child.material.emissive) {
+        child.material.emissive.set(isDarkMode ? '#ff9a3c' : '#000000');
+        child.material.emissiveIntensity = isDarkMode ? 0.9 : 0;
+      }
+    });
+  }, [object, isDarkMode, prop.fire]);
+
+  const refs = useRef<(THREE.Object3D | null)[]>([]);
+  const beaconRef = useRef<THREE.Group>(null);
+  const spots = useMemo(() => (prop.float ? [] : [{ position: prop.position }]), [prop]);
+  useSnapToGround(refs, spots);
+  useFrame(({ clock }) => {
+    const obj = refs.current[0];
+    if (prop.float && obj) obj.position.y = prop.position[1] + waterBob(clock.getElapsedTime(), 0.9 + index * 0.7);
+    // the lamp rides with the lighthouse once it is set on the ground
+    if (beaconRef.current && obj) beaconRef.current.position.y = obj.position.y + (prop.beacon ?? 0);
+  });
+
+  return (
+    <group>
+      <primitive
+        ref={(el: THREE.Object3D | null) => {
+          refs.current[0] = el; // no return: React 19 would treat it as a cleanup
+        }}
+        object={object}
+        position={prop.position}
+        rotation={[0, prop.heading ?? 0, 0]}
+      />
+      {prop.beacon !== undefined && (
+        <group ref={beaconRef} position={[prop.position[0], prop.beacon, prop.position[2]]}>
+          <LighthouseBeacon isDarkMode={isDarkMode} />
+        </group>
+      )}
+      {/* firelight at night */}
+      {prop.fire && isDarkMode && (
+        <pointLight
+          position={[prop.position[0], 3, prop.position[2]]}
+          color='#ff9a3c'
+          intensity={90}
+          distance={22}
+          decay={1.5}
+        />
+      )}
+    </group>
+  );
+}
+
+function IslandProps({ isDarkMode }: { isDarkMode: boolean }) {
+  return (
+    <>
+      {ISLAND_PROPS.map((prop, i) => (
+        <IslandPropModel key={prop.file} prop={prop} index={i} isDarkMode={isDarkMode} />
+      ))}
+    </>
   );
 }
 
@@ -1392,18 +1530,18 @@ function SimpleSky({ isDarkMode }: { isDarkMode: boolean }) {
   );
 }
 
-// Animated ocean: a gentle swell moves the surface, fine ripples are added
-// per pixel, distant water reflects the sky, and the ripples break the
-// sun (or moon) into a glittering path. Calm near the beach.
+// Ocean: a gentle swell moves the surface (calm at the beach so water never
+// covers the sand), smooth waves and ripples shade it, and small glints
+// show where it mirrors the sun or moon. No sky reflection, so the far
+// water never smears.
 const OCEAN_SWELLS = `
-  // direction.xy, frequency, speed ; amplitude in w
+  // direction.xy, frequency, speed ; amplitude in SWELL_AMP
   const int SWELLS = 3;
   const vec4 SWELL[3] = vec4[3](
     vec4(1.0, 0.35, 0.045, 0.9),
     vec4(-0.45, 1.0, 0.07, 1.2),
     vec4(0.8, -0.7, 0.12, 1.7)
   );
-  // longer, slightly taller swells
   const float SWELL_AMP[3] = float[3](0.85, 0.48, 0.24);
 `;
 
@@ -1411,8 +1549,6 @@ const OCEAN_VERTEX = `
   uniform float uTime;
   uniform vec4 uShore; // centre x, centre z, radius x, radius z
   varying vec3 vWorld;
-  varying float vShore;
-  varying float vCalm;
   ${OCEAN_SWELLS}
   #include <fog_pars_vertex>
 
@@ -1429,8 +1565,6 @@ const OCEAN_VERTEX = `
     }
     world.y += h * calm;
     vWorld = world.xyz;
-    vShore = d;
-    vCalm = calm;
     vec4 mvPosition = viewMatrix * world;
     gl_Position = projectionMatrix * mvPosition;
     #include <fog_vertex>
@@ -1448,55 +1582,60 @@ const OCEAN_FRAGMENT = `
   uniform vec3 uSunColor;
   uniform float uNight;
   varying vec3 vWorld;
-  varying float vShore;
-  varying float vCalm;
-  ${OCEAN_SWELLS}
+  // waves that shade the surface: direction.xy, frequency, speed ;
+  // slope in WAVE_SLOPE
+  const vec4 WAVE[4] = vec4[4](
+    vec4(1.0, 0.35, 0.09, 0.9),
+    vec4(-0.45, 1.0, 0.13, 1.2),
+    vec4(0.8, -0.7, 0.21, 1.5),
+    vec4(-0.9, -0.3, 0.17, -1.3)
+  );
+  const float WAVE_SLOPE[4] = float[4](0.16, 0.13, 0.1, 0.08);
   #include <fog_pars_fragment>
-
-  // slope of a sine wave train, added up into a surface normal
-  void addWave(inout vec2 slope, vec2 p, vec2 dir, float k, float speed, float amp) {
-    dir = normalize(dir);
-    slope += dir * cos(dot(p, dir) * k + uTime * speed) * amp * k;
-  }
 
   void main() {
     vec2 p = vWorld.xz;
+    float dist = distance(cameraPosition.xz, p);
+
+    // Smooth waves: gentle swells plus two small ripple sets, used for
+    // shading only (the surface itself stays calm by the beach). Ripples
+    // fade with distance so far water doesn't turn into fine stripes.
     vec2 slope = vec2(0.0);
-    // the big swell (same as the vertex shader)
-    for (int i = 0; i < SWELLS; i++) {
-      addWave(slope, p, SWELL[i].xy, SWELL[i].z, SWELL[i].w, SWELL_AMP[i] * vCalm);
+    for (int i = 0; i < 4; i++) {
+      vec2 dir = normalize(WAVE[i].xy);
+      slope += dir * cos(dot(p, dir) * WAVE[i].z + uTime * WAVE[i].w) * WAVE_SLOPE[i];
     }
-    // fine ripples, several directions so they never line up
-    float rip = 0.4 + 0.35 * vCalm;
-    // two gentle ripple sets, faded with distance so far water doesn't
-    // turn into fine stripes
-    float near = 1.0 - smoothstep(60.0, 200.0, distance(cameraPosition.xz, p));
-    addWave(slope, p, vec2(0.9, 0.4), 0.45, 1.5, 0.07 * rip * near);
-    addWave(slope, p, vec2(-0.6, 0.8), 0.7, -1.9, 0.05 * rip * near);
+    float near = 1.0 - smoothstep(50.0, 180.0, dist);
+    vec2 d1 = normalize(vec2(0.9, 0.4));
+    vec2 d2 = normalize(vec2(-0.6, 0.8));
+    slope += d1 * cos(dot(p, d1) * 0.55 + uTime * 1.6) * 0.05 * near;
+    slope += d2 * cos(dot(p, d2) * 0.8 - uTime * 2.0) * 0.035 * near;
+    slope *= 1.0 - 0.7 * smoothstep(80.0, 260.0, dist);
     vec3 n = normalize(vec3(-slope.x, 1.0, -slope.y));
 
-    vec3 v = normalize(cameraPosition - vWorld);
-    float facing = max(dot(n, v), 0.0);
-
-    // turquoise close to the viewer, deepening to ocean blue toward the
-    // horizon; based on distance from the camera, so it never forms a ring
-    float far = smoothstep(25.0, 230.0, distance(cameraPosition.xz, p));
+    // lighter blue close to the viewer, deepening toward the horizon;
+    // based on distance from the camera, so it never forms a ring
+    float far = smoothstep(25.0, 230.0, dist);
     vec3 water = mix(uShallow, uDeep, far);
-    water *= 0.85 + 0.25 * max(dot(n, normalize(vec3(0.4, 1.0, -0.3))), 0.0);
 
-    // reflection of the sky, stronger at grazing angles (far away)
+    // wave faces turned toward the light are a touch lighter, the others a
+    // touch deeper (relative to flat water, so only the waves show)
+    vec3 sun = normalize(uSunDir);
+    vec3 key = normalize(vec3(sun.x, 1.2, sun.z));
+    water *= 1.0 + 1.4 * (dot(n, key) - key.y);
+
+    // a hint of sky on the far water only
+    water = mix(water, uHorizon, 0.18 * far);
+
+    // small glints where the waves mirror the sun or moon (the moon's are
+    // tighter and dimmer), fading out so far water stays calm
+    vec3 v = normalize(cameraPosition - vWorld);
     vec3 r = reflect(-v, n);
-    vec3 sky = mix(uHorizon, uSkyTop, smoothstep(0.0, 0.45, r.y));
-    float fresnel = 0.02 + 0.35 * pow(1.0 - facing, 5.0);
-    vec3 col = mix(water, sky, fresnel);
+    float hit = pow(max(dot(r, sun), 0.0), mix(250.0, 600.0, uNight));
+    float glint = hit * (1.0 - smoothstep(60.0, 200.0, dist));
+    water = mix(water, mix(uFoam, uSunColor, 0.5), min(glint * mix(0.6, 0.25, uNight), 0.6));
 
-    // sun / moon glitter on the ripples
-    float glint = pow(max(dot(r, normalize(uSunDir)), 0.0), 300.0);
-    float sheen = pow(max(dot(r, normalize(uSunDir)), 0.0), 24.0);
-    // the moon's path is softer than the sun's
-    col += uSunColor * (glint * 1.4 + sheen * 0.1) * (1.0 - 0.55 * uNight);
-
-    gl_FragColor = vec4(col, 1.0);
+    gl_FragColor = vec4(water, 1.0);
     #include <colorspace_fragment>
     #include <fog_fragment>
   }
@@ -1958,22 +2097,30 @@ function SceneComponent({
   // Labels wait until the camera has settled on the island view
   const [cameraAtHome, setCameraAtHome] = useState(false);
   const [hoveredSceneObject, setHoveredSceneObject] = useState<string | null>(null);
-  const [hoveredButtonObject, setHoveredButtonObject] = useState<string | null>(
-    null
-  );
   const [objectScreenPositions, setObjectScreenPositions] = useState<
     Record<string, [number, number]>
   >({});
-  const activeHoveredObject = hoveredButtonObject || hoveredSceneObject;
+  const activeHoveredObject = hoveredSceneObject;
 
   // Opening or closing a page clears any hover left over from the click, so
   // the labels come back on the island without a highlight
   useEffect(() => {
     setHoveredSceneObject(null);
-    setHoveredButtonObject(null);
   }, [focusPage]);
-  // The landmark for the open page stays lit until the page closes
-  const litObject = focusPage ? PAGE_OBJECT[focusPage] ?? null : null;
+  // Page chosen with the arrows on the island view; it follows whichever
+  // page was opened last, so coming back shows the same one
+  const [homePick, setHomePick] = useState<CarouselPage>('profile');
+  useEffect(() => {
+    if (focusPage) setHomePick(focusPage as CarouselPage);
+  }, [focusPage]);
+  const atHome = showHomeButtons && cameraAtHome;
+  // Lit landmark: the open page's, or on the island view the chosen one.
+  // At night it shines (light and glow); by day it also sparkles.
+  const litObject = focusPage
+    ? PAGE_OBJECT[focusPage] ?? null
+    : atHome
+    ? PAGE_OBJECT[homePick]
+    : null;
 
   useEffect(() => {
     const timer = setTimeout(() => setSceneLoaded(true), 300);
@@ -2043,15 +2190,16 @@ function SceneComponent({
         }}
       />
 
-      {/* Object Popup Menu */}
-      <ObjectPopupMenu
+      {/* Page carousel below the dock */}
+      <PageCarousel
         isDarkMode={isDarkMode}
         deviceInfo={deviceInfo}
-        objectPositions={objectScreenPositions}
-        onNavigate={handleNavigation}
-        onHoverObject={setHoveredButtonObject}
-        highlightedObject={hoveredSceneObject}
-        isVisible={showHomeButtons && cameraAtHome}
+        anchor={objectScreenPositions.stonehead}
+        selected={homePick}
+        onSelect={setHomePick}
+        onOpen={handleNavigation}
+        onPlayClickSound={onPlayClickSound}
+        isVisible={atHome}
         introDelayMs={homeButtonsIntroDelayMs}
       />
 
@@ -2139,6 +2287,7 @@ function SceneComponent({
             isDarkMode={isDarkMode}
             externalHovered={activeHoveredObject === 'twochairs'}
             spotlight={litObject === 'twochairs'}
+            sparkle={litObject === 'twochairs'}
           >
             <SimpleTwoChairs
               key={`twochairs-${isDarkMode}`}
@@ -2154,6 +2303,7 @@ function SceneComponent({
             isDarkMode={isDarkMode}
             externalHovered={activeHoveredObject === 'house'}
             spotlight={litObject === 'house'}
+            sparkle={litObject === 'house'}
           >
             <SimpleHouse key={`house-${isDarkMode}`} isDarkMode={isDarkMode} />
           </InteractiveObject>
@@ -2166,6 +2316,7 @@ function SceneComponent({
             isDarkMode={isDarkMode}
             externalHovered={activeHoveredObject === 'stonehead'}
             spotlight={litObject === 'stonehead'}
+            sparkle={litObject === 'stonehead'}
           >
             <SimpleDog key={`dog-${isDarkMode}`} isDarkMode={isDarkMode} />
           </InteractiveObject>
@@ -2178,6 +2329,7 @@ function SceneComponent({
             isDarkMode={isDarkMode}
             externalHovered={activeHoveredObject === 'surfboard'}
             spotlight={litObject === 'surfboard'}
+            sparkle={litObject === 'surfboard'}
           >
             <SimpleComputerDesk
               key={`desk-${isDarkMode}`}
@@ -2185,9 +2337,9 @@ function SceneComponent({
             />
           </InteractiveObject>
 
-          {/* Set dressing: hammock and beach props */}
+          {/* Set dressing */}
           <SimpleHammock isDarkMode={isDarkMode} />
-          <BeachProps isDarkMode={isDarkMode} />
+          <IslandProps isDarkMode={isDarkMode} />
 
           {/* Lamp posts (non-interactive), lit at night */}
           {LAMPS.map((lamp, i) => (
@@ -2247,7 +2399,7 @@ useGLTF.preload('/models/object_two_chairs.glb');
 useGLTF.preload('/models/object_house.glb');
 useGLTF.preload('/models/object_dog.glb');
 useGLTF.preload('/models/object_hammock.glb');
-useGLTF.preload('/models/object_beach_props.glb');
+ISLAND_PROPS.forEach((p) => useGLTF.preload(`/models/props/${p.file}.glb`));
 useGLTF.preload('/models/object_computer_desk.glb');
 useGLTF.preload('/models/object_island_lamp.glb');
 useGLTF.preload('/models/object_cloud_puffy.glb');

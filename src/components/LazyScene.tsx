@@ -90,7 +90,7 @@ function SceneLoadingFallback({ isDarkMode }: { isDarkMode: boolean }) {
         style={{
           color: isDarkMode ? '#F8F6E3' : '#FFFFFF',
           fontSize: '1.2rem',
-          fontFamily: 'Lato, sans-serif',
+          fontFamily: "'Baloo 2', sans-serif",
           opacity: 0.8,
         }}
       >

@@ -16,7 +16,7 @@
   width: 100%;
   max-width: 31.25rem; /* Converted from 500px */
   margin: 0 auto;
-  font-family: 'Lato', sans-serif;
+  font-family: 'Baloo 2', sans-serif;
 }
 
 .pc-card {
@@ -144,50 +144,32 @@
   margin-bottom: auto;
 }
 
+/* Name in the site's display face: white by day, warm yellow at night */
 .pc-header h3 {
   font-size: var(--text-4xl); /* 36px using CSS var */
-  font-weight: 700;
-  color: white;
-  margin: 0 0 var(--space-md) 0; /* 12px using CSS var */
-  text-shadow: 0 var(--space-xs) var(--space-lg) rgba(0, 0, 0, 0.8);
-  letter-spacing: -0.03125rem;
-  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  margin: 0 0 var(--space-md) 0; /* room for the script's descenders */
+  text-shadow: 0 2px 0 rgba(5, 12, 26, 0.55), 0 var(--space-xs) var(--space-lg) rgba(0, 0, 0, 0.8);
+  font-family: 'Playwrite AU NSW', 'Baloo 2', cursive;
+}
+
+/* The name and the role follow the theme: white by day, yellow at night */
+.pc-dark .pc-header h3,
+.pc-dark .pc-header p {
+  color: #ffd36b;
 }
 
 .pc-header p {
-  font-size: var(--text-lg); /* 18px using CSS var */
-  color: rgba(255, 255, 255, 0.95);
+  font-size: var(--text-xl);
+  color: #ffffff;
   margin: 0;
-  font-weight: 400;
-  text-shadow: 0 var(--space-xs) var(--space-lg) rgba(0, 0, 0, 0.7);
-  font-family: 'Lato', sans-serif;
-}
-
-/* Centered contact button */
-.pc-contact-btn {
-  padding: var(--space-md) var(--space-xl); /* 12px 24px using CSS vars */
-  background: #3b74c5;
-  border: none;
-  border-radius: var(--radius-lg); /* 12px using CSS var */
-  color: white;
-  font-weight: 600;
-  font-size: var(--text-sm); /* 14px using CSS var */
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 var(--space-xs) var(--space-lg) rgba(59, 116, 197, 0.8);
-  min-width: 7.5rem;
-  min-height: var(--touch-target-sm); /* Proper touch target */
-  margin-top: auto;
-  font-family: 'Lato', sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pc-contact-btn:hover {
-  transform: translateY(-var(--space-xs)); /* -4px using CSS var */
-  background: #6f6d65;
-  box-shadow: 0 var(--space-sm) var(--space-xl) rgba(111, 109, 101, 0.8);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgba(5, 12, 26, 0.5), 0 var(--space-xs) var(--space-lg) rgba(0, 0, 0, 0.7);
+  font-family: 'Baloo 2', sans-serif;
 }
 
 @keyframes pulse {
@@ -219,12 +201,6 @@
     font-size: var(--text-base); /* 16px using CSS var */
   }
 
-  .pc-contact-btn {
-    padding: var(--space-sm) var(--space-lg); /* 8px 20px using CSS vars */
-    font-size: var(--text-sm); /* 14px using CSS var */
-    min-width: 6.25rem;
-    min-height: var(--touch-target-sm); /* Proper touch target */
-  }
 }
 
 /* Mobile landscape - Desktop-like appearance */
@@ -253,12 +229,6 @@
     font-size: var(--text-xl); /* 20px using CSS var - larger subtitle */
   }
 
-  .pc-contact-btn {
-    padding: var(--space-sm) var(--space-lg); /* 8px 20px using CSS vars */
-    font-size: var(--text-sm); /* 14px using CSS var */
-    min-width: 6rem;
-    min-height: var(--touch-target-sm); /* Proper touch target */
-  }
 }
 
 /* Mobile portrait specific adjustments */
@@ -287,12 +257,6 @@
     line-height: 1.4;
   }
 
-  .pc-contact-btn {
-    padding: var(--space-xs) var(--space-md); /* 4px 12px - more compact */
-    font-size: var(--text-xs); /* 12px - smaller button text */
-    min-width: 5rem; /* Slightly smaller min-width */
-    margin-top: var(--space-md); /* 12px - controlled spacing */
-  }
 }
 
 /* Performance optimizations */

@@ -10,7 +10,8 @@ interface CreditsPopupProps {
   deviceInfo?: DeviceInfo;
 }
 
-// Models on the island that need credit (all CC BY 4.0 on Sketchfab)
+// Models on the island that need credit (CC BY on Sketchfab and Poly Pizza;
+// the barrel is CC0 but credited anyway)
 const creditsData = [
   {
     name: 'Dog Harvest Moon',
@@ -38,14 +39,74 @@ const creditsData = [
     author: 'Star Veb',
   },
   {
+    name: 'Lighthouse',
+    url: 'https://poly.pizza/m/7H8is9jrGeB',
+    author: 'Poly by Google',
+  },
+  {
+    name: 'Red/White Beach Umbrella',
+    url: 'https://poly.pizza/m/2li3sdSkmCI',
+    author: 'S. Paul Michael',
+  },
+  {
+    name: 'Surfboard',
+    url: 'https://poly.pizza/m/3js4cQ-O-p2',
+    author: 'jeremy',
+  },
+  {
+    name: 'Beach ball',
+    url: 'https://poly.pizza/m/4IwPTeOmq6c',
+    author: 'the_ normalgamer',
+  },
+  {
+    name: 'Sand castle',
+    url: 'https://poly.pizza/m/5iuHHfVoaza',
+    author: 'Poly by Google',
+  },
+  {
+    name: 'Campfire',
+    url: 'https://poly.pizza/m/dxxHpVXHLZg',
+    author: 'jeremy',
+  },
+  {
+    name: 'Crab',
+    url: 'https://poly.pizza/m/bmZ6-LnPmp0',
+    author: 'jeremy',
+  },
+  {
+    name: 'Treasure chest',
+    url: 'https://poly.pizza/m/f7SU-dO1FG7',
+    author: 'Louis DeScioli',
+  },
+  {
+    name: 'Life preserver',
+    url: 'https://poly.pizza/m/7n1vrlFN0GH',
+    author: 'Poly by Google',
+  },
+  {
+    name: 'Inflatable water tube',
+    url: 'https://poly.pizza/m/3xMFo1NeFvx',
+    author: 'Franco Ricci',
+  },
+  {
+    name: 'Gull',
+    url: 'https://poly.pizza/m/7sQHkW0ylJy',
+    author: 'Poly by Google',
+  },
+  {
+    name: 'Barrel',
+    url: 'https://poly.pizza/m/zjCQP1TAci',
+    author: 'Quaternius',
+  },
+  {
+    name: 'Tiki Head',
+    url: 'https://poly.pizza/m/98mRturOg91',
+    author: 'Tipatat Chennavasin',
+  },
+  {
     name: 'Hammock (low poly)',
     url: 'https://sketchfab.com/3d-models/hammock-low-poly-c5fd4cef873f44f5a31db1fc6a04c572',
     author: 'Andrey 3D',
-  },
-  {
-    name: 'Low Poly Beach Assets',
-    url: 'https://sketchfab.com/3d-models/low-poly-beach-assets-66c18ecd7a834d4a99dabc46b5ee6e4a',
-    author: 'EdwinRC',
   },
   {
     name: 'stylize clouds',
@@ -109,7 +170,7 @@ export default function CreditsPopup({
         : '0 25px 50px rgba(0, 0, 0, 0.3), 0 0 30px rgba(255, 255, 255, 0.1)',
       maxHeight: '80vh',
       overflowY: 'auto',
-      fontFamily: 'Lato, sans-serif',
+      fontFamily: "'Baloo 2', sans-serif",
     };
 
     if (deviceInfo?.isLandscapeMobile) {

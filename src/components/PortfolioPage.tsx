@@ -44,7 +44,7 @@ export default function PortfolioPage({
       border: '1px solid var(--ui-line)',
       backgroundColor: hovered ? 'var(--ui-accent)' : 'transparent',
       color: hovered ? 'var(--ui-on-accent)' : 'var(--ui-ink)',
-      fontFamily: 'Lato, sans-serif',
+      fontFamily: "'Baloo 2', sans-serif",
       fontWeight: 700,
       fontSize: '0.875rem',
       textDecoration: 'none',
@@ -108,7 +108,7 @@ export default function PortfolioPage({
                   borderRadius: '999px',
                   minHeight: '2.5rem',
                   padding: isPhone ? '0.5rem 1.1rem' : '0.6rem 1.5rem',
-                  fontFamily: 'Lato, sans-serif',
+                  fontFamily: "'Baloo 2', sans-serif",
                   fontWeight: 700,
                   fontSize: isPhone ? '0.875rem' : '1rem',
                   backgroundColor: active ? 'var(--ui-accent)' : 'transparent',
@@ -174,7 +174,7 @@ export default function PortfolioPage({
                   <p
                     style={{
                       margin: 0,
-                      fontFamily: 'Lato, sans-serif',
+                      fontFamily: "'Baloo 2', sans-serif",
                       fontWeight: 700,
                       fontSize: '0.75rem',
                       letterSpacing: '0.06em',
@@ -187,7 +187,7 @@ export default function PortfolioPage({
                   <h2
                     style={{
                       margin: 0,
-                      fontFamily: 'Lato, sans-serif',
+                      fontFamily: "'Baloo 2', sans-serif",
                       fontWeight: 800,
                       fontSize: isPhone ? '1.1rem' : '1.2rem',
                       lineHeight: 1.2,
@@ -199,7 +199,7 @@ export default function PortfolioPage({
                   <p
                     style={{
                       margin: 0,
-                      fontFamily: 'Lato, sans-serif',
+                      fontFamily: "'Baloo 2', sans-serif",
                       fontSize: '0.9rem',
                       lineHeight: 1.45,
                       color: 'var(--ui-ink)',

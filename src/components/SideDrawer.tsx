@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { DeviceInfo } from '../lib/types';
 import { ResponsiveValues } from '../lib/responsiveUtils';
+import { WriteOn, joinsAt } from './Letters';
 
 // Every page opens as a drawer from one side, so the landmark the camera
 // zoomed to stays in view on the other. A tab on the drawer's edge closes it.
@@ -96,30 +97,33 @@ export function DrawerTitle({
   const compact = device === 'mobile-landscape';
   return (
     <header style={{ textAlign: 'center', marginBottom: compact ? '1rem' : '1.75rem' }}>
+      {/* Display voice; written on each time the page opens */}
       <h1
+        aria-label={title}
+        className='type-display'
         style={{
           margin: 0,
-          fontFamily: 'Lato, sans-serif',
-          fontWeight: 900,
           letterSpacing: '-0.02em',
-          lineHeight: 1.1,
+          lineHeight: 1.05,
           color: 'var(--ui-accent)',
           fontSize: compact
             ? '1.75rem'
             : device === 'mobile-portrait'
-            ? '2.25rem'
-            : '2.75rem',
+            ? '2.75rem'
+            : '3.5rem',
         }}
       >
-        {title}
+        <WriteOn text={title} startMs={200} durationMs={900} />
       </h1>
       {subtitle && (
+        // Aside voice: the serif, fading up after the title
         <p
+          className='type-aside drift-in'
           style={{
+            ...joinsAt(500),
             margin: '0.5rem 0 0',
-            fontFamily: 'Lato, sans-serif',
-            fontSize: compact ? '0.9rem' : '1rem',
-            lineHeight: 1.5,
+            fontSize: compact ? '1.1rem' : '1.3rem',
+            lineHeight: 1.35,
             color: 'var(--ui-ink-muted)',
           }}
         >

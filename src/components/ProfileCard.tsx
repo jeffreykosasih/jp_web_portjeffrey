@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import './ProfileCard.css';
 import { PROFILE } from '../lib/profile';
+import { WriteOn, joinsAt } from './Letters';
 
 interface ProfileCardProps {
   avatarUrl?: string;
@@ -22,10 +23,7 @@ interface ProfileCardProps {
   title?: string;
   handle?: string;
   status?: string;
-  contactText?: string;
   showUserInfo?: boolean;
-  onContactClick?: () => void;
-  onNavigate?: (page: 'connect') => void;
   isDarkMode?: boolean; // Keep compatibility with existing prop
 }
 
@@ -74,10 +72,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
   title = PROFILE.role,
   handle = 'jeffreyk',
   status = 'Online',
-  contactText = 'Contact',
   showUserInfo = true,
-  onContactClick,
-  onNavigate,
   isDarkMode = false,
 }) => {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -271,18 +266,10 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
     [iconUrl, grainUrl, showBehindGradient, behindGradient, innerGradient]
   );
 
-  const handleContactClick = useCallback(() => {
-    if (onNavigate) {
-      onNavigate('connect');
-    } else if (onContactClick) {
-      onContactClick();
-    }
-  }, [onNavigate, onContactClick]);
-
   return (
     <div
       ref={wrapRef}
-      className={`pc-card-wrapper ${className}`.trim()}
+      className={`pc-card-wrapper ${isDarkMode ? 'pc-dark' : ''} ${className}`.trim()}
       style={cardStyle}
     >
       <section ref={cardRef} className='pc-card'>
@@ -332,20 +319,13 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
           <div className='pc-content'>
             {/* Header with name and title - overlaid on image */}
             <div className='pc-header'>
-              <h3>{name}</h3>
-              <p>{title}</p>
+              <h3 aria-label={name} className='type-display'>
+                <WriteOn text={name} startMs={450} durationMs={1000} />
+              </h3>
+              <p className='drift-in' style={joinsAt(750)}>
+                {title}
+              </p>
             </div>
-
-            {/* Centered contact button */}
-            <button
-              className='pc-contact-btn'
-              onClick={handleContactClick}
-              style={{ pointerEvents: 'auto' }}
-              type='button'
-              aria-label={`Contact ${name || 'user'}`}
-            >
-              {contactText}
-            </button>
           </div>
         </div>
       </section>

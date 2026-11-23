@@ -1,5 +1,5 @@
 /* Font imports - must be at the top */
-@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400..800&family=Playwrite+AU+NSW:wght@400&display=swap');
 
 /* CSS Custom Properties for consistent spacing and sizing */
 :root {
@@ -82,7 +82,7 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: 'Lato', sans-serif;
+  font-family: 'Baloo 2', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* Better touch interactions */
@@ -96,11 +96,6 @@ body {
   /* Ensure proper rendering on all devices */
   min-height: -webkit-fill-available;
   min-height: fill-available;
-}
-
-/* Lato font utility class */
-.font-lato {
-  font-family: 'Lato', sans-serif;
 }
 
 /* Mobile-first responsive text sizes using CSS custom properties */
@@ -316,7 +311,7 @@ body {
   backdrop-filter: blur(0.625rem); /* 10px in rem */
   color: #ffffff;
   font-size: var(--text-sm);
-  font-family: 'Lato', sans-serif;
+  font-family: 'Baloo 2', sans-serif;
   outline: none;
   transition: border-color 0.3s ease;
 }
@@ -560,5 +555,112 @@ body {
 @media (orientation: portrait) {
   :root {
     --drawer-tablet-width: 62vw;
+  }
+}
+
+/* Type and motion: an ocean-beach feel.
+
+   Two voices. Baloo 2, soft and sunny, is the site face. Playwrite AU NSW,
+   a joined-up Australian school hand, is the display voice for names and
+   titles. The aside voice (lines that describe rather than name) is
+   Baloo 2 set lighter. */
+.type-display {
+  font-family: 'Playwrite AU NSW', 'Baloo 2', cursive;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.type-aside {
+  font-family: 'Baloo 2', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* Drift (supporting lines): a soft fade up. Each piece sets its start as
+   --d. Nothing is hidden at rest: the hidden pose lives in the keyframe, so
+   with motion turned off the text is simply there. */
+.drift-in {
+  animation: drift-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes drift-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+}
+
+/* Write-on (names and titles in the joined-up script): the words are
+   revealed from left to right at a steady hand's pace, as if being written.
+   Splitting a joined-up hand into letters would break the joins, so the
+   whole word is revealed instead. --d sets the start, --w the length. */
+.write-on {
+  display: inline-block;
+  animation: write-on var(--w, 1.2s) cubic-bezier(0.45, 0.05, 0.4, 1) both;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes write-on {
+  from {
+    clip-path: inset(-0.3em 100% -0.3em -0.3em);
+  }
+  to {
+    clip-path: inset(-0.3em -0.3em -0.3em -0.3em);
+  }
+}
+
+/* The tide: the opening screen's colour washes down off the island with a
+   wavy leading edge. */
+.tide {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.tide__water {
+  position: absolute;
+  inset: -5vh 0 0;
+  background: var(--tide, #12508f);
+  animation: tide-out 1.4s cubic-bezier(0.7, 0, 0.25, 1) 0.1s both;
+}
+
+/* The wavy edge rides on the water's top and rolls sideways as it goes */
+.tide__edge {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  width: 200%;
+  height: 7vh;
+  margin-bottom: -1px;
+  background: var(--tide, #12508f);
+  -webkit-mask: var(--tide-wave) repeat-x bottom / 50% 100%;
+  mask: var(--tide-wave) repeat-x bottom / 50% 100%;
+  animation: tide-roll 1.5s linear both;
+}
+
+@keyframes tide-out {
+  to {
+    transform: translateY(110%);
+  }
+}
+
+@keyframes tide-roll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tide {
+    display: none;
+  }
+
+  .drift-in,
+  .write-on {
+    animation: none;
   }
 }

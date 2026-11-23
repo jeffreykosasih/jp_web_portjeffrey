@@ -263,7 +263,7 @@ export default function SkillsetPage({
 
     return {
       fontWeight: '900',
-      fontFamily: 'Lato, sans-serif',
+      fontFamily: "'Baloo 2', sans-serif",
       background: 'linear-gradient(45deg, #ffffff, #e2e8f0)',
       WebkitBackgroundClip: 'text',
       backgroundClip: 'text',
@@ -286,7 +286,7 @@ export default function SkillsetPage({
       backgroundColor: isActive ? 'var(--ui-accent)' : 'transparent',
       color: isActive ? 'var(--ui-on-accent)' : 'var(--ui-ink)',
       fontWeight: 700,
-      fontFamily: 'Lato, sans-serif',
+      fontFamily: "'Baloo 2', sans-serif",
       fontSize: isPhone ? '0.875rem' : '1rem',
       cursor: 'pointer',
       transition: 'background-color 0.2s ease, color 0.2s ease',
@@ -315,7 +315,7 @@ export default function SkillsetPage({
 
     return {
       lineHeight: '1.6',
-      fontFamily: 'Lato, sans-serif',
+      fontFamily: "'Baloo 2', sans-serif",
       fontWeight: '400',
       color: 'var(--ui-ink-muted)',
       textAlign: 'center' as const,
@@ -479,7 +479,7 @@ export default function SkillsetPage({
                     ? 'var(--text-base)'
                     : 'var(--text-base)',
                 fontWeight: '700',
-                fontFamily: 'Lato, sans-serif',
+                fontFamily: "'Baloo 2', sans-serif",
                 marginBottom:
                   deviceType === 'mobile-landscape'
                     ? 'var(--space-xs)'
@@ -504,7 +504,7 @@ export default function SkillsetPage({
                     : deviceType === 'tablet'
                     ? 'calc(var(--text-sm) - 0.05rem)'
                     : 'calc(var(--text-sm) - 0.05rem)',
-                fontFamily: 'Lato, sans-serif',
+                fontFamily: "'Baloo 2', sans-serif",
                 fontWeight: '400',
                 color: 'var(--ui-ink-muted)',
                 textAlign: 'center',
@@ -570,7 +570,7 @@ export default function SkillsetPage({
               style={{
                 fontSize: isPhoneCard ? '0.9rem' : '1rem',
                 fontWeight: '700',
-                fontFamily: 'Lato, sans-serif',
+                fontFamily: "'Baloo 2', sans-serif",
                 margin: '0 0 0.25rem',
                 color: 'var(--ui-ink)',
                 textAlign: 'center',
@@ -581,7 +581,7 @@ export default function SkillsetPage({
             <p
               style={{
                 fontSize: isPhoneCard ? '0.75rem' : '0.8rem',
-                fontFamily: 'Lato, sans-serif',
+                fontFamily: "'Baloo 2', sans-serif",
                 color: 'var(--ui-ink-muted)',
                 textAlign: 'center',
                 margin: 0,
@@ -634,7 +634,7 @@ export default function SkillsetPage({
                 backgroundColor: isDarkMode
                   ? DRAWER_COLORS.dark.tab
                   : DRAWER_COLORS.light.tab,
-                border: '1px solid rgba(255, 255, 255, 0.18)',
+                border: 'none',
                 borderRadius: 'var(--radius-lg)',
                 padding: deviceInfo?.isMobile ? '28px 18px' : '36px 30px',
                 maxWidth: '520px',
@@ -658,9 +658,9 @@ export default function SkillsetPage({
                   width: '40px',
                   height: '40px',
                   borderRadius: '50%',
-                  border: '1px solid rgba(255, 255, 255, 0.45)',
+                  border: 'none', // no outline: the accent colour is on the icon
                   backgroundColor: 'transparent',
-                  color: 'var(--ui-ink)',
+                  color: 'var(--ui-accent)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -668,17 +668,16 @@ export default function SkillsetPage({
                   transition: 'all 0.15s ease',
                 }}
               >
-                <FontAwesomeIcon icon={faTimes} style={{ fontSize: '16px' }} />
+                <FontAwesomeIcon icon={faTimes} style={{ fontSize: '22px' }} />
               </motion.button>
 
               {/* Title */}
               <h2
+                className='type-display'
                 style={{
-                  fontSize: deviceInfo?.isMobile ? '1.75rem' : '2.25rem',
-                  fontWeight: '900',
+                  fontSize: deviceInfo?.isMobile ? '2.25rem' : '2.75rem',
                   letterSpacing: '-0.02em',
-                  fontFamily: 'Lato, sans-serif',
-                  color: 'var(--ui-ink)',
+                  color: 'var(--ui-accent)',
                   margin: '0.25rem 0 1.5rem',
                   textAlign: 'center',
                 }}
@@ -738,7 +737,7 @@ export default function SkillsetPage({
                       style={{
                         fontSize: '1rem',
                         fontWeight: '700',
-                        fontFamily: 'Lato, sans-serif',
+                        fontFamily: "'Baloo 2', sans-serif",
                         margin: '0 0 0.25rem',
                         color: 'var(--ui-ink)',
                         textAlign: 'center',
@@ -749,7 +748,7 @@ export default function SkillsetPage({
                     <p
                       style={{
                         fontSize: '0.8rem',
-                        fontFamily: 'Lato, sans-serif',
+                        fontFamily: "'Baloo 2', sans-serif",
                         fontWeight: '400',
                         color: 'var(--ui-ink-muted)',
                         textAlign: 'center',
@@ -767,7 +766,7 @@ export default function SkillsetPage({
               <p
                 style={{
                   fontSize: deviceInfo?.isMobile ? '0.8rem' : '0.9rem',
-                  fontFamily: 'Lato, sans-serif',
+                  fontFamily: "'Baloo 2', sans-serif",
                   fontWeight: '400',
                   color: 'var(--ui-ink-muted)',
                   textAlign: 'center',

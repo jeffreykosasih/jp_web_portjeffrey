@@ -183,7 +183,7 @@ export default function ConnectPage({
     border: `2px solid ${errors[field] ? '#ffd1d1' : 'var(--ui-line)'}`,
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
     color: 'var(--ui-ink)',
-    fontFamily: 'Lato, sans-serif',
+    fontFamily: "'Baloo 2', sans-serif",
     fontSize: '1rem', // 16px stops iOS zooming in
     outline: 'none',
   });
@@ -243,7 +243,7 @@ export default function ConnectPage({
                 <span
                   style={{
                     marginTop: '0.5rem',
-                    fontFamily: 'Lato, sans-serif',
+                    fontFamily: "'Baloo 2', sans-serif",
                     fontSize: '0.875rem',
                     fontWeight: 700,
                     color: 'var(--ui-ink)',
@@ -376,7 +376,7 @@ export default function ConnectPage({
                   border: 'none',
                   backgroundColor: accent,
                   color: brand,
-                  fontFamily: 'Lato, sans-serif',
+                  fontFamily: "'Baloo 2', sans-serif",
                   fontWeight: 800,
                   fontSize: '1rem',
                   cursor: isSubmitting ? 'default' : 'pointer',
@@ -409,7 +409,7 @@ export default function ConnectPage({
               // Dark tones keep white text above 7:1
               backgroundColor: toast.kind === 'ok' ? '#14532d' : '#7f1d1d',
               color: 'var(--ui-ink)',
-              fontFamily: 'Lato, sans-serif',
+              fontFamily: "'Baloo 2', sans-serif",
               fontWeight: 700,
               fontSize: '0.9375rem',
               boxShadow: '0 0.5rem 1.5rem rgba(0, 0, 0, 0.3)',

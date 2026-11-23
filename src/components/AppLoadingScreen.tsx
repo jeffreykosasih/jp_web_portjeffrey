@@ -15,7 +15,9 @@ interface AppLoadingScreenProps {
 const DOTS_DURATION = 800; // 0.8 seconds (faster loading)
 const TITLE_DELAY = 300; // shortly after dots fade out
 const BUTTON_DELAY = 600; // shortly after title appears
-const TRANSITION_DURATION = 1200; // 1.2 seconds for fade out/in
+// The button fades, then the tide (see Tide in main)
+// takes over in the same blue
+const TRANSITION_DURATION = 450;
 
 // Three layers of waves rolling along the bottom of the welcome screen.
 // Each path repeats every half width, so sliding it by 50% loops seamlessly.
@@ -76,7 +78,6 @@ export default function AppLoadingScreen({
     background: isDarkMode ? '#162542' : '#12508f',
     text: isDarkMode ? '#ffd36b' : '#ffffff',
     dots: isDarkMode ? '#ffd36b' : '#ffffff',
-    transition: isDarkMode ? '#000000' : '#ffffff',
   };
 
   // Animation sequence
@@ -149,9 +150,10 @@ export default function AppLoadingScreen({
   // Responsive title styles based on device type
   const titleStyles: React.CSSProperties = React.useMemo(() => {
     const baseStyles: React.CSSProperties = {
-      fontFamily: "'Lato', sans-serif",
-      fontWeight: 800,
-      letterSpacing: '-0.05em',
+      // Display voice: the joined-up script (see .type-display)
+      fontFamily: "'Playwrite AU NSW', 'Baloo 2', cursive",
+      fontWeight: 400,
+      letterSpacing: '0.005em',
       lineHeight: 1.1,
       color: colors.text,
       textAlign: 'center',
@@ -161,7 +163,7 @@ export default function AppLoadingScreen({
     if (deviceInfo?.isMobile) {
       return {
         ...baseStyles,
-        fontSize: '3.5rem',
+        fontSize: '2.9rem',
       };
     } else if (deviceInfo?.isLandscapeMobile) {
       return {
@@ -185,7 +187,7 @@ export default function AppLoadingScreen({
   // Responsive button styles based on device type
   const buttonStyles: React.CSSProperties = React.useMemo(() => {
     const baseStyles: React.CSSProperties = {
-      fontFamily: "'Lato', sans-serif",
+      fontFamily: "'Baloo 2', sans-serif",
       lineHeight: 1.2,
       fontWeight: 600,
       borderRadius: 'var(--radius-full)',
@@ -263,17 +265,6 @@ export default function AppLoadingScreen({
   };
 
   // Transition overlay variants
-  const transitionOverlay = {
-    initial: { opacity: 0 },
-    animate: {
-      opacity: 1,
-      transition: { duration: 0.6, ease: 'easeInOut' },
-    },
-    exit: {
-      opacity: 0,
-      transition: { duration: 0.6, ease: 'easeInOut' },
-    },
-  };
 
   return (
     <div style={containerStyles}>
@@ -369,30 +360,49 @@ export default function AppLoadingScreen({
 
               {/* Title */}
               {showTitle && (
+                // The italic lead-in drifts up, then the name floats in
+                // letter by letter
                 <motion.h1
                   key='title'
+                  aria-label='Welcome to Port Jeffrey'
                   style={{ ...titleStyles, margin: 0 }}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 1.2,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                    type: 'spring',
-                    damping: 25,
-                    stiffness: 80,
-                  }}
+                  exit={{ opacity: 0, transition: { duration: 0.3 } }}
                 >
-                  <div
+                  <span
+                    aria-hidden='true'
+                    className='type-aside'
                     style={{
+                      display: 'block',
+                      overflow: 'hidden',
+                      paddingBottom: '0.1em',
+                      fontSize: '0.42em',
+                      lineHeight: 1.15,
                       marginBottom:
                         deviceInfo?.isMobile || deviceInfo?.isLandscapeMobile
                           ? 'var(--space-xs)'
                           : 'var(--space-sm)',
                     }}
                   >
-                    Welcome to
-                  </div>
-                  <div>Port Jeffrey</div>
+                    <span className='drift-in' style={{ display: 'block' }}>Welcome to</span>
+                  </span>
+                  {/* Joined-up school handwriting; it is written on from left
+                      to right, as if by hand (split into letters it would
+                      lose the joins between them) */}
+                  <span
+                    aria-hidden='true'
+                    className='write-on'
+                    style={{
+                      display: 'block',
+                      fontFamily: "'Playwrite AU NSW', 'Baloo 2', cursive",
+                      fontWeight: 400,
+                      fontSize: '0.95em',
+                      letterSpacing: 0,
+                      lineHeight: 1.6,
+                      paddingInline: '0.15em',
+                    }}
+                  >
+                    Port Jeffrey
+                  </span>
                 </motion.h1>
               )}
             </AnimatePresence>
@@ -458,28 +468,6 @@ export default function AppLoadingScreen({
         </div>
       </div>
 
-      {/* Transition Overlay */}
-      <AnimatePresence>
-        {isTransitioning && (
-          <motion.div
-            key='transition'
-            variants={transitionOverlay}
-            initial='initial'
-            animate='animate'
-            exit='exit'
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100vw',
-              height: '100vh',
-              backgroundColor: colors.transition,
-              zIndex: 10000,
-              pointerEvents: 'none',
-            }}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }
