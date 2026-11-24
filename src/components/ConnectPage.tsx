@@ -18,7 +18,6 @@ const GmailIcon = () => (
 interface ConnectPageProps {
   isVisible: boolean;
   onClose: () => void;
-  onOpenBurgerMenu: (slideDirection?: 'left' | 'right') => void;
   isDarkMode: boolean;
   shouldAnimateText?: boolean;
   deviceInfo?: DeviceInfo;

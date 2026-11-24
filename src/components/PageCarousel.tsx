@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { WriteOn } from './Letters';
 import {
   faEnvelope,
   faBriefcase,
@@ -209,10 +208,11 @@ export default function PageCarousel({
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: isMobile ? 8 : 12,
-                    fontFamily: "'Playwrite AU NSW', 'Baloo 2', cursive",
-                    fontWeight: 400,
-                    fontSize: isMobile ? 24 : 32,
-                    letterSpacing: 0,
+                    // Same face as the menu's page list
+                    fontFamily: "'Baloo 2', sans-serif",
+                    fontWeight: 800,
+                    fontSize: isMobile ? 26 : 34,
+                    letterSpacing: '-0.01em',
                     whiteSpace: 'nowrap',
                     textShadow: halo,
                   }}
@@ -224,8 +224,7 @@ export default function PageCarousel({
                       filter: `drop-shadow(${isDarkMode ? '0 2px 3px rgba(5, 12, 26, 0.9)' : '0 2px 3px rgba(10, 45, 87, 0.9)'})`,
                     }}
                   />
-                  {/* each step writes the new page name on */}
-                  <WriteOn text={page.title} durationMs={700} />
+                  <span aria-hidden='true'>{page.title}</span>
                 </motion.span>
               </AnimatePresence>
             </span>

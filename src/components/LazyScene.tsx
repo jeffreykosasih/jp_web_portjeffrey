@@ -1,5 +1,4 @@
 import React, { Suspense } from 'react';
-import { DeviceInfo } from '../lib/types';
 
 // PERFORMANCE FIX: Lazy load the heavy 3D scene component
 const SceneComponent = React.lazy(() => import('./Scene'));
@@ -53,7 +52,6 @@ class SceneErrorBoundary extends React.Component {
 
 interface LazySceneProps {
   isDarkMode: boolean;
-  showIsland: boolean;
   showSea: boolean;
   deviceInfo?: any;
   onNavigateToConnect?: () => void;
@@ -102,7 +100,6 @@ function SceneLoadingFallback({ isDarkMode }: { isDarkMode: boolean }) {
 
 export default function LazyScene({
   isDarkMode,
-  showIsland,
   showSea,
   deviceInfo,
   onNavigateToConnect,
@@ -120,7 +117,6 @@ export default function LazyScene({
       <Suspense fallback={<SceneLoadingFallback isDarkMode={isDarkMode} />}>
         <SceneComponent
           isDarkMode={isDarkMode}
-          showIsland={showIsland}
           showSea={showSea}
           deviceInfo={deviceInfo}
           onNavigateToConnect={onNavigateToConnect}

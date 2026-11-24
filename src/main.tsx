@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css'; // Tailwind CSS
 import { motion, AnimatePresence } from 'framer-motion';
@@ -52,7 +52,6 @@ const getInitialWaveSound = (): boolean => {
 
 function App(): React.JSX.Element {
   const deviceInfo = useDeviceDetection();
-  const { playClickSound } = useClickSound(0.5);
 
   const getInitialTheme = (): boolean => {
     const currentHour = new Date().getHours();
@@ -69,8 +68,6 @@ function App(): React.JSX.Element {
   const [focusedPage, setFocusedPage] = useState<PageName | null>(null);
   const pageOpenTimer = useRef<number | null>(null);
   const [isBurgerMenuOpen, setIsBurgerMenuOpen] = useState<boolean>(false);
-  const [shouldAnimateBurgerMenu, setShouldAnimateBurgerMenu] =
-    useState<boolean>(true);
   const [shouldAnimatePageText, setShouldAnimatePageText] =
     useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -79,15 +76,10 @@ function App(): React.JSX.Element {
   const [showTide, setShowTide] = useState<boolean>(false);
   const [isThemeToggleHidden, setIsThemeToggleHidden] =
     useState<boolean>(false);
-  const [isCreditsButtonHidden, setIsCreditsButtonHidden] =
-    useState<boolean>(false);
   const [isCreditsPopupVisible, setIsCreditsPopupVisible] =
     useState<boolean>(false);
   const [shouldDelayHomeButtonsOnce, setShouldDelayHomeButtonsOnce] =
     useState<boolean>(false);
-  const [burgerMenuSlideDirection, setBurgerMenuSlideDirection] = useState<
-    'left' | 'right'
-  >('right');
   const [triggerInitialZoom, setTriggerInitialZoom] = useState<boolean>(false);
 
   // While a page drawer is open, the corner buttons gather on the free side
@@ -120,11 +112,14 @@ function App(): React.JSX.Element {
     setIsCreditsPopupVisible((prev) => !prev);
   };
 
+  // One switch for all sound: the ocean waves and the click sounds
   const [isWaveSoundOn, setIsWaveSoundOn] =
     useState<boolean>(getInitialWaveSound);
-  // Read by OceanAudio during the same click that toggles it, before React
-  // re-renders, so turning the sound off never starts it.
+  // Read by OceanAudio and the click sound during the same click that
+  // toggles it, before React re-renders, so turning the sound off is silent.
   const waveSoundOnRef = useRef<boolean>(isWaveSoundOn);
+  const isSoundOn = useCallback(() => waveSoundOnRef.current, []);
+  const { playClickSound } = useClickSound(0.5, isSoundOn);
 
   const toggleWaveSound = (): void => {
     const next = !waveSoundOnRef.current;
@@ -187,26 +182,6 @@ function App(): React.JSX.Element {
     if (pageOpenTimer.current) window.clearTimeout(pageOpenTimer.current);
     setActivePage(null);
     setFocusedPage(null);
-  };
-
-  const openBurgerMenu = (slideDirection: 'left' | 'right' = 'right'): void => {
-    // When opening burger menu from a page, enable opacity animation but disable other animations
-    setShouldAnimateBurgerMenu(true); // Enable burger menu animation for opacity
-    setShouldAnimatePageText(false);
-    setBurgerMenuSlideDirection(slideDirection);
-    setIsBurgerMenuOpen(true);
-    // Reset animation flags after a brief delay
-    setTimeout(() => {
-      setShouldAnimatePageText(true);
-    }, 100);
-  };
-
-  const handleLoadingComplete = (): void => {
-    setShowMainApp(true);
-    setShouldDelayHomeButtonsOnce(false);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 100);
   };
 
   const handleExploreClick = (): void => {
@@ -403,7 +378,6 @@ function App(): React.JSX.Element {
 
               <MemoizedLazyScene
                 isDarkMode={isDarkMode}
-                showIsland={true}
                 showSea={false}
                 deviceInfo={deviceInfo}
                 onNavigateToConnect={() => openPage('connect')}
@@ -461,7 +435,6 @@ function App(): React.JSX.Element {
                       playClickSound();
                       toggleCreditsPopup();
                     }}
-                    isHidden={isCreditsButtonHidden}
                     deviceInfo={deviceInfo}
                     dock={dockFor('credits')}
                   />
@@ -477,10 +450,9 @@ function App(): React.JSX.Element {
                     isDarkMode={isDarkMode}
                     isSoundOn={isWaveSoundOn}
                     onToggle={() => {
-                      playClickSound();
                       toggleWaveSound();
+                      playClickSound(); // heard when turning sound on, not off
                     }}
-                    isHidden={isCreditsButtonHidden}
                     deviceInfo={deviceInfo}
                     dock={dockFor('sound')}
                   />
@@ -499,11 +471,8 @@ function App(): React.JSX.Element {
                     onOpenChange={setIsBurgerMenuOpen}
                     activePage={activePage}
                     onHideThemeToggle={setIsThemeToggleHidden}
-                    onHideCreditsButton={setIsCreditsButtonHidden}
-                    shouldAnimate={shouldAnimateBurgerMenu}
                     deviceInfo={deviceInfo}
                     onPlayClickSound={playClickSound}
-                    slideDirection={burgerMenuSlideDirection}
                   />
                 </motion.div>
               </div>
@@ -513,7 +482,6 @@ function App(): React.JSX.Element {
               <ProfilePage
                 isVisible={activePage === 'profile'}
                 onClose={closePage}
-                onOpenBurgerMenu={openBurgerMenu}
                 isDarkMode={isDarkMode}
                 shouldAnimateText={shouldAnimatePageText}
                 deviceInfo={deviceInfo}
@@ -522,23 +490,22 @@ function App(): React.JSX.Element {
               <SkillsetPage
                 isVisible={activePage === 'skillset'}
                 onClose={closePage}
-                onOpenBurgerMenu={openBurgerMenu}
                 isDarkMode={isDarkMode}
                 shouldAnimateText={shouldAnimatePageText}
                 deviceInfo={deviceInfo}
+                onPlayClickSound={playClickSound}
               />
               <PortfolioPage
                 isVisible={activePage === 'portfolio'}
                 onClose={closePage}
-                onOpenBurgerMenu={openBurgerMenu}
                 isDarkMode={isDarkMode}
                 shouldAnimateText={shouldAnimatePageText}
                 deviceInfo={deviceInfo}
+                onPlayClickSound={playClickSound}
               />
               <ConnectPage
                 isVisible={activePage === 'connect'}
                 onClose={closePage}
-                onOpenBurgerMenu={openBurgerMenu}
                 isDarkMode={isDarkMode}
                 shouldAnimateText={shouldAnimatePageText}
                 deviceInfo={deviceInfo}
@@ -618,7 +585,6 @@ function App(): React.JSX.Element {
             }}
           >
             <AppLoadingScreen
-              onLoadingComplete={handleLoadingComplete}
               onExploreClick={handleExploreClick}
               isDarkMode={isDarkMode}
               deviceInfo={deviceInfo}

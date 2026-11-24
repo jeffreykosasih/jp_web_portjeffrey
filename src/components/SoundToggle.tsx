@@ -15,7 +15,6 @@ interface SoundToggleProps {
   isDarkMode: boolean;
   isSoundOn: boolean;
   onToggle: () => void;
-  isHidden?: boolean;
   deviceInfo?: DeviceInfo;
   /** Where to sit while a page drawer is open */
   dock?: ButtonDock | null;
@@ -29,13 +28,11 @@ export default function SoundToggle({
   isDarkMode,
   isSoundOn,
   onToggle,
-  isHidden = false,
   deviceInfo,
   dock = null,
 }: SoundToggleProps): React.JSX.Element | null {
   const [isHovered, setIsHovered] = React.useState(false);
 
-  if (isHidden) return null;
 
   const buttonStyles = getButtonStyles({
     position: 'bottom-left',

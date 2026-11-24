@@ -7,15 +7,13 @@ import React, {
   useMemo,
 } from 'react';
 import { Canvas, useFrame, ThreeEvent, useThree } from '@react-three/fiber';
-import { PerspectiveCamera, Sparkles, useGLTF } from '@react-three/drei';
-import { motion, AnimatePresence } from 'framer-motion';
+import { PerspectiveCamera, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import PageCarousel, { type CarouselPage } from './PageCarousel';
 
 interface SceneProps {
   isDarkMode: boolean;
-  showIsland: boolean;
   showSea: boolean;
   deviceInfo?: any;
   onNavigateToConnect?: () => void;
@@ -44,86 +42,104 @@ interface InteractiveObjectProps {
   externalHovered?: boolean;
 }
 
-// Component to apply brightness effect on hover
+// Brightens a landmark when it is hovered or its page is chosen / open, and
+// fades the lift in and out (rather than snapping) so stepping between pages
+// with the arrows hands the highlight over smoothly.
 function ObjectBrightness({
-  object,
+  objectRef,
   isHovered,
   isLit = false,
   isDarkMode,
 }: {
-  object: any;
+  objectRef: React.MutableRefObject<THREE.Object3D | null>;
   isHovered: boolean;
-  /** The landmark of the open page: a softer, steady highlight */
+  /** The landmark of the chosen or open page */
   isLit?: boolean;
   isDarkMode?: boolean;
 }) {
-  const originalMaterials = useRef<Map<any, any>>(new Map());
+  const originals = useRef(new Map<any, { color: THREE.Color; emissive: THREE.Color | null; emissiveIntensity: number }>());
+  // current lift: colour multiplier, emissive multiplier, emissive boost
+  const current = useRef({ color: 1, emissive: 1, boost: 0 });
+  const applied = useRef({ color: 1, emissive: 1, boost: 0 });
+  const frame = useRef(0);
 
-  useEffect(() => {
+  useFrame((_, delta) => {
+    const object = objectRef.current;
     if (!object) return;
+    const on = isHovered || isLit;
+    // Night: a strong glow. Day: a clear lift (strong sunlight already
+    // falls on the models, so it has to be more than a hint).
+    const target = !on
+      ? { color: 1, emissive: 1, boost: 0 }
+      : isDarkMode
+      ? { color: 2.2, emissive: 2.0, boost: 0.5 }
+      : { color: isHovered ? 1.45 : 1.42, emissive: 1.2, boost: isHovered ? 0.2 : 0.18 };
+    const k = 1 - Math.exp(-delta * 9); // ~0.3 s to settle
+    const c = current.current;
+    c.color += (target.color - c.color) * k;
+    c.emissive += (target.emissive - c.emissive) * k;
+    c.boost += (target.boost - c.boost) * k;
+
+    // Only touch the materials while the lift is changing, plus a check
+    // now and then for materials that are new (a theme switch rebuilds them)
+    const a = applied.current;
+    const changing =
+      Math.abs(c.color - a.color) > 0.002 ||
+      Math.abs(c.emissive - a.emissive) > 0.002 ||
+      Math.abs(c.boost - a.boost) > 0.002;
+    frame.current = (frame.current + 1) % 30;
+    if (!changing && frame.current !== 0) return;
 
     object.traverse((child: any) => {
-      if (child.isMesh && child.material) {
-        // Store original material properties
-        if (!originalMaterials.current.has(child.material)) {
-          const original = {
-            color: child.material.color.clone(),
-            emissive: child.material.emissive
-              ? child.material.emissive.clone()
-              : null,
-            emissiveIntensity: child.material.emissiveIntensity || 0,
-          };
-          originalMaterials.current.set(child.material, original);
-        }
-
-        const original = originalMaterials.current.get(child.material);
-
-        if (isHovered || isLit) {
-          // Hover is a clear lift; an open page's landmark gets a gentle
-          // one in daylight (strong light already falls on it) and the full
-          // lift at night
-          const soft = isLit && !isHovered && !isDarkMode;
-          const colorMultiplier = isDarkMode ? 2.2 : soft ? 1.12 : 1.4;
-          const emissiveMultiplier = isDarkMode ? 2.0 : soft ? 1.05 : 1.2;
-          const emissiveBoost = isDarkMode ? 0.5 : soft ? 0.05 : 0.2;
-
-          child.material.color
-            .copy(original.color)
-            .multiplyScalar(colorMultiplier);
-
-          if (child.material.emissive && original.emissive) {
-            child.material.emissive
-              .copy(original.emissive)
-              .multiplyScalar(emissiveMultiplier);
-          }
-
-          if ('emissiveIntensity' in child.material) {
-            child.material.emissiveIntensity = Math.min(
-              isDarkMode ? 1.5 : 1.0, // Reduced max values to prevent overexposure
-              original.emissiveIntensity + emissiveBoost
-            );
-          }
-        } else {
-          // Restore original properties
-          child.material.color.copy(original.color);
-          if (child.material.emissive && original.emissive) {
-            child.material.emissive.copy(original.emissive);
-          }
-          if ('emissiveIntensity' in child.material) {
-            child.material.emissiveIntensity = original.emissiveIntensity;
-          }
-        }
-
-        child.material.needsUpdate = true;
+      const material = child.isMesh ? child.material : null;
+      if (!material?.color) return;
+      let original = originals.current.get(material);
+      if (!original) {
+        original = {
+          color: material.color.clone(),
+          emissive: material.emissive ? material.emissive.clone() : null,
+          emissiveIntensity: material.emissiveIntensity || 0,
+        };
+        originals.current.set(material, original);
+      }
+      material.color.copy(original.color).multiplyScalar(c.color);
+      if (material.emissive && original.emissive) {
+        material.emissive.copy(original.emissive).multiplyScalar(c.emissive);
+      }
+      if ('emissiveIntensity' in material) {
+        material.emissiveIntensity = Math.min(
+          isDarkMode ? 1.5 : 1.0,
+          original.emissiveIntensity + c.boost
+        );
       }
     });
-  }, [object, isHovered, isLit, isDarkMode]);
+    a.color = c.color;
+    a.emissive = c.emissive;
+    a.boost = c.boost;
+  });
 
   return null;
 }
 
-// Sparkle size (drei's Sparkles scale it by distance from the camera)
-const SPARKLE_SIZE = 70;
+// Light over the chosen landmark at night, faded in and out
+function NightSpot({ position, on }: { position: [number, number, number]; on: boolean }) {
+  const light = useRef<THREE.PointLight>(null);
+  useFrame((_, delta) => {
+    if (!light.current) return;
+    const target = on ? 260 : 0;
+    light.current.intensity += (target - light.current.intensity) * (1 - Math.exp(-delta * 9));
+  });
+  return (
+    <pointLight
+      ref={light}
+      position={[position[0], position[1] + 10, position[2] - 6]}
+      color='#ffe2a8'
+      intensity={0}
+      distance={34}
+      decay={1.5}
+    />
+  );
+}
 
 function InteractiveObject({
   children,
@@ -135,23 +151,16 @@ function InteractiveObject({
   isDarkMode,
   externalHovered = false,
   spotlight = false,
-  sparkle = false,
 }: InteractiveObjectProps & {
   isDarkMode?: boolean;
+  /** This landmark's page is the chosen or open one */
   spotlight?: boolean;
-  /** Daytime highlight for the page chosen on the island: drifting sparkles */
-  sparkle?: boolean;
 }) {
-  const timeoutRef = useRef<number | null>(null);
-  const objectRef = useRef<any>(null);
+  const objectRef = useRef<THREE.Group>(null);
 
   const handlePointerEnter = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation();
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
       document.body.style.cursor = 'pointer';
       onHover(true);
     },
@@ -161,14 +170,11 @@ function InteractiveObject({
   const handlePointerLeave = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation();
-      // Remove timeout - keep brightness while cursor is on object
       document.body.style.cursor = 'default';
       onHover(false);
     },
     [onHover]
   );
-
-  // Cleanup effect no longer needed since we removed setTimeout
 
   return (
     <group>
@@ -185,29 +191,11 @@ function InteractiveObject({
       </mesh>
 
       <group ref={objectRef}>{children}</group>
-      {/* Light over the landmark whose page is open */}
-      {spotlight && isDarkMode && (
-        <pointLight
-          position={[position[0], position[1] + 10, position[2] - 6]}
-          color={isDarkMode ? '#ffe2a8' : '#fff6e0'}
-          intensity={isDarkMode ? 260 : 140}
-          distance={34}
-          decay={1.5}
-        />
-      )}
-      {sparkle && !isDarkMode && (
-        <Sparkles
-          position={position}
-          scale={[boundingBox[0] * 1.5, boundingBox[1] * 1.4, boundingBox[2] * 1.5]}
-          count={32}
-          size={SPARKLE_SIZE}
-          speed={0.45}
-          noise={0.6}
-          color='#fff3b8'
-        />
-      )}
+      {/* The chosen / open landmark is lit from above at night (by day it
+          only brightens; a clearer daytime marker is still to come) */}
+      {isDarkMode && <NightSpot position={position} on={spotlight} />}
       <ObjectBrightness
-        object={objectRef.current}
+        objectRef={objectRef}
         // Hover comes from the scene, which clears it whenever a page opens
         // or closes. (A hover kept here got stuck on: once a click opened a
         // page, the pointer never "left" the landmark, so it stayed lit.)
@@ -220,109 +208,6 @@ function InteractiveObject({
 }
 
 // Utility Functions
-
-interface MaterialSettings {
-  isLight?: boolean;
-  isNatural?: boolean;
-  isWood?: boolean;
-  isMetal?: boolean;
-  isCrystal?: boolean;
-  fallbackColor?: { r: number; g: number; b: number };
-  emissiveColor?: string;
-  emissiveIntensity?: number;
-}
-
-function applyMaterialSettings(
-  material: any,
-  isDarkMode: boolean,
-  settings: MaterialSettings = {}
-) {
-  if (!material?.color) return;
-
-  const {
-    isLight = false,
-    isNatural = false,
-    isWood = false,
-    isMetal = false,
-    isCrystal = false,
-    fallbackColor = { r: 0.6, g: 0.5, b: 0.4 },
-    emissiveColor = '#000000',
-    emissiveIntensity = 0,
-  } = settings;
-
-  // Set material properties
-  if ('roughness' in material) {
-    material.roughness = isCrystal
-      ? 0.1
-      : isNatural
-      ? 0.8
-      : isMetal
-      ? 0.3
-      : 0.7;
-  }
-  if ('metalness' in material) {
-    material.metalness = isCrystal
-      ? 0.8
-      : isMetal
-      ? 0.7
-      : isNatural
-      ? 0.0
-      : 0.1;
-  }
-
-  // Store original color once
-  if (!material.userData) material.userData = {};
-  if (!material.userData.originalColor) {
-    const brightness = material.color.r + material.color.g + material.color.b;
-    const isOverBright =
-      brightness > 2.8 ||
-      (material.color.r > 0.95 &&
-        material.color.g > 0.95 &&
-        material.color.b > 0.95);
-
-    material.userData.originalColor = isOverBright
-      ? fallbackColor
-      : {
-          r: material.color.r,
-          g: material.color.g,
-          b: material.color.b,
-        };
-  }
-
-  // Reset to original color
-  const { r, g, b } = material.userData.originalColor;
-  material.color.setRGB(r, g, b);
-
-  // Apply lighting effects
-  if (isDarkMode) {
-    if (isLight || isCrystal) {
-      if (material.emissive?.setHex) material.emissive.setHex(emissiveColor);
-      if ('emissiveIntensity' in material)
-        material.emissiveIntensity = emissiveIntensity || 1.0;
-      if (isCrystal && material.emissive?.copy)
-        material.emissive.copy(material.color);
-    } else {
-      if (material.emissive?.setHex) material.emissive.setHex(0x000000);
-      if ('emissiveIntensity' in material) material.emissiveIntensity = 0;
-    }
-  } else {
-    // Sunlight brightness
-    const brightFactor = isNatural ? 2.2 : isWood ? 1.8 : isMetal ? 1.6 : 1.9;
-    material.color.multiplyScalar(brightFactor);
-
-    // Add warm sunlight tint
-    if (!isLight && !isCrystal) {
-      const warmTint = isNatural ? 0.05 : 0.03;
-      material.color.r = Math.min(1.0, material.color.r + warmTint);
-      material.color.g = Math.min(1.0, material.color.g + warmTint * 0.8);
-    }
-
-    if (material.emissive?.setHex) material.emissive.setHex(0x000000);
-    if ('emissiveIntensity' in material) material.emissiveIntensity = 0;
-  }
-
-  if ('needsUpdate' in material) material.needsUpdate = true;
-}
 
 function safeTraverse(object: any, callback: (node: any) => void) {
   if (!object) return;
@@ -341,11 +226,7 @@ function safeTraverse(object: any, callback: (node: any) => void) {
   }
 }
 
-function processSceneNode(
-  scene: any,
-  isDarkMode: boolean,
-  materialProcessor: (node: any, material: any) => void
-) {
+function processSceneNode(scene: any, materialProcessor: (material: any) => void) {
   if (!scene?.clone) {
     console.warn('Scene is invalid, skipping processing');
     return null;
@@ -405,7 +286,7 @@ function processSceneNode(
           ? node.material
           : [node.material];
         materials.forEach((material: any) => {
-          if (material) materialProcessor(node, material);
+          if (material) materialProcessor(material);
         });
       } catch (error) {
         console.warn('Error processing material:', error);
@@ -417,8 +298,9 @@ function processSceneNode(
 }
 
 // Layout (screen-left is +x from the island view):
-//   one row across the island: house — lamp — desk — lamp — beach chairs
-//   front-centre: the dog on the dock, framed by the dock's two lamps
+//   back row: house — lamp — lighthouse — lamp — beach chairs
+//   front: the dog on the dock (between the dock's two lamps), the desk on
+//   the right-hand grass
 // Everything below (models, lamps, labels, click areas, camera) reads from
 // this table.
 const LANDMARK = {
@@ -514,7 +396,7 @@ function SimpleIsland({
     }
   };
 
-  const clonedScene = useMemo(() => processSceneNode(scene, isDarkMode, (node, material) => {
+  const clonedScene = useMemo(() => processSceneNode(scene, (material) => {
     // The dock's built-in lamp is switched on, like the lamp posts
     if (material.name === 'Light_Pole_Light') {
       material.color.set('#ffe3a3');
@@ -767,22 +649,7 @@ function SimpleBoat({
     }
   });
 
-  if (!scene) {
-    return (
-      <group ref={boatRef} position={[-15, 4, -40]}>
-        <mesh>
-          <boxGeometry args={[36, 12, 18]} />
-          <meshStandardMaterial
-            color={isDarkMode ? '#8B4513' : '#D2691E'}
-            roughness={0.7}
-            metalness={0.1}
-          />
-        </mesh>
-      </group>
-    );
-  }
-
-  const clonedScene = useMemo(() => processSceneNode(scene, isDarkMode, (node, material) => {
+  const clonedScene = useMemo(() => processSceneNode(scene, (material) => {
     if (!material.userData) material.userData = {};
     if (isDarkMode) {
       material.color.multiplyScalar(0.25);
@@ -832,24 +699,9 @@ function SimpleBoat({
 function SimpleTwoChairs({ isDarkMode }: { isDarkMode: boolean }) {
   const { scene } = useGLTF('/models/object_two_chairs.glb');
 
-  if (!scene) {
-    return (
-      <group position={[0, 0, 0]}>
-        <mesh>
-          <boxGeometry args={[4, 3, 4]} />
-          <meshStandardMaterial
-            color={isDarkMode ? '#8B4513' : '#D2691E'}
-            roughness={0.7}
-            metalness={0.1}
-          />
-        </mesh>
-      </group>
-    );
-  }
-
   const clonedScene = useMemo(
     () =>
-      processSceneNode(scene, isDarkMode, (node, material) => {
+      processSceneNode(scene, (material) => {
         // Store original color if not already stored
         if (!material.userData) material.userData = {};
         if (isDarkMode) {
@@ -892,24 +744,9 @@ const HOUSE_HEADING = 3.14;
 function SimpleHouse({ isDarkMode }: { isDarkMode: boolean }) {
   const { scene } = useGLTF('/models/object_house.glb');
 
-  if (!scene) {
-    return (
-      <group position={[0, 0, 0]}>
-        <mesh>
-          <boxGeometry args={[6, 8, 6]} />
-          <meshStandardMaterial
-            color={isDarkMode ? '#654321' : '#8B4513'}
-            roughness={0.7}
-            metalness={0.1}
-          />
-        </mesh>
-      </group>
-    );
-  }
-
   const clonedScene = useMemo(
     () =>
-      processSceneNode(scene, isDarkMode, (node, material) => {
+      processSceneNode(scene, (material) => {
         // Store original color if not already stored
         if (!material.userData) material.userData = {};
         if (!material.userData.originalColor) {
@@ -1027,7 +864,7 @@ function SimpleComputerDesk({ isDarkMode }: { isDarkMode: boolean }) {
   const { scene } = useGLTF('/models/object_computer_desk.glb');
 
   const object = useMemo(() => {
-    const processed = processSceneNode(scene, isDarkMode, (_node, material) => {
+    const processed = processSceneNode(scene, (material) => {
       material.color.multiplyScalar(isDarkMode ? 0.3 : 1.6);
       material.needsUpdate = true;
     });
@@ -1359,22 +1196,7 @@ function SimpleIslandLamp({
     }
   };
 
-  if (!scene) {
-    return (
-      <group position={position}>
-        <mesh>
-          <cylinderGeometry args={[0.5, 0.5, 4]} />
-          <meshStandardMaterial
-            color={isDarkMode ? '#444444' : '#888888'}
-            roughness={0.7}
-            metalness={0.1}
-          />
-        </mesh>
-      </group>
-    );
-  }
-
-  const clonedScene = useMemo(() => processSceneNode(scene, isDarkMode, (node, material) => {
+  const clonedScene = useMemo(() => processSceneNode(scene, (material) => {
     // The bulb is switched on: lit softly by day, brightly at night
     if (material.name === 'Light_Pole_Light') {
       material.color.set('#ffe3a3');
@@ -1752,23 +1574,7 @@ function SimpleOceanWaves({
     }
   });
 
-  if (!scene) {
-    // Fallback - create a simple animated plane if model fails to load
-    return (
-      <group ref={wavesRef} position={[0, -2, 0]}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[2000, 1000, 1]}>
-          <planeGeometry args={[1, 1, 32, 32]} />
-          <meshStandardMaterial
-            color={isDarkMode ? '#000a0f' : '#1a4d66'}
-            transparent
-            opacity={0.6}
-          />
-        </mesh>
-      </group>
-    );
-  }
-
-  const clonedScene = processSceneNode(scene, isDarkMode, (node, material) => {
+  const clonedScene = processSceneNode(scene, (material) => {
     // Simplified water material processing
     if (isDarkMode) {
       material.color.setHex(0x000a0f);
@@ -1841,7 +1647,6 @@ const LEFT_DRAWER_PAGES = new Set(['skillset', 'connect']);
 const RIGHT_DRAWER_PAGES = new Set(['portfolio', 'profile']);
 
 const ORIGIN = new THREE.Vector3(0, 0, 0);
-const UP = new THREE.Vector3(0, 1, 0);
 
 // Camera that eases in on load, flies to a landmark when its page opens,
 // and flies back to the island view when the page closes.
@@ -1862,6 +1667,10 @@ function AnimatedCamera({
 }) {
   const atHomeRef = useRef<boolean | null>(null);
   const cameraRef = useRef<any>(null);
+  // Share of the screen the open drawer really covers, measured from the
+  // page (so the framing stays right at every window size)
+  const measuredShare = useRef<number | null>(null);
+  const measureFrame = useRef(0);
   const lookAt = useRef(new THREE.Vector3(0, 0, 0));
   const introStarted = useRef(false);
   const introDone = useRef(!triggerInitialZoom);
@@ -1952,14 +1761,27 @@ function AnimatedCamera({
       : RIGHT_DRAWER_PAGES.has(focusPage!)
       ? 1
       : 0;
-    const drawerShare = isPortraitPhone
-      ? 0
+    // Measure the drawer that is on screen every few frames; until one is
+    // there, fall back to the widths SideDrawer uses
+    measureFrame.current = (measureFrame.current + 1) % 10;
+    if (measureFrame.current === 0 && typeof document !== 'undefined') {
+      const aside = document.querySelector('aside[aria-label]');
+      measuredShare.current = aside
+        ? Math.min(1, aside.getBoundingClientRect().width / window.innerWidth)
+        : null;
+    }
+    const guessedShare = isPortraitPhone
+      ? 1
       : deviceInfo?.isLandscapeMobile ||
         (deviceInfo?.isMobile && deviceInfo?.orientation === 'landscape')
       ? 0.58
       : deviceInfo?.isTablet && deviceInfo?.orientation === 'portrait'
       ? 0.62
       : 0.5;
+    const coverShare = target ? measuredShare.current ?? guessedShare : 0;
+    // A drawer that (nearly) fills the screen leaves nowhere to frame the
+    // landmark, so the lens stays centred
+    const drawerShare = coverShare > 0.9 ? 0 : coverShare;
     const tanHalf = Math.tan(THREE.MathUtils.degToRad(cameraSettings.fov / 2));
     const filmTarget =
       drawerSide * (drawerShare / 2) * 2 * tanHalf * camera.aspect * camera.getFilmWidth();
@@ -2011,64 +1833,40 @@ function AnimatedCamera({
   );
 }
 
-// Screen Position Tracker Component
-// Only pushes new positions when a label actually moves on screen (or the
-// scene would re-render every frame), and pauses while zoomed into a page.
-function ScreenPositionTracker({
-  onUpdatePositions,
+// Tracks where the dock is on screen, for the page picker that sits below it.
+// Only reports when it actually moves (or the scene would re-render every
+// frame), and rests while a page is open.
+const DOCK_ANCHOR = new THREE.Vector3(LANDMARK.dog.x, 0, LANDMARK.dog.z - 3);
+
+function DockTracker({
+  onMove,
   paused = false,
 }: {
-  onUpdatePositions: (positions: Record<string, [number, number]>) => void;
+  onMove: (screen: [number, number]) => void;
   paused?: boolean;
 }) {
   const { camera, size } = useThree();
-  const last = useRef<Record<string, [number, number]>>({});
-
-  // Object positions in 3D world space (matching InteractiveObject positions)
-  const objectPositions = {
-    // Label anchors: the top of each back-row landmark, and the ground just
-    // in front of each front-row one (their labels hang below)
-    twochairs: new THREE.Vector3(LANDMARK.chairs.x, 10, LANDMARK.chairs.z),
-    house: new THREE.Vector3(LANDMARK.house.x, 20, LANDMARK.house.z), // roof line
-    stonehead: new THREE.Vector3(LANDMARK.dog.x, 0, LANDMARK.dog.z - 3),
-    surfboard: new THREE.Vector3(LANDMARK.desk.x, 7, LANDMARK.desk.z),
-  };
+  const point = useMemo(() => new THREE.Vector3(), []);
+  const last = useRef<[number, number] | null>(null);
 
   useFrame(() => {
-    const screenPositions: Record<string, [number, number]> = {};
-
-    Object.entries(objectPositions).forEach(([key, worldPos]) => {
-      // Clone the position to avoid modifying the original
-      const pos = worldPos.clone();
-
-      // Project 3D position to 2D screen coordinates
-      pos.project(camera);
-
-      // Convert from normalized device coordinates to pixel coordinates
-      const x = (pos.x * 0.5 + 0.5) * size.width;
-      const y = (pos.y * -0.5 + 0.5) * size.height;
-
-      screenPositions[key] = [x, y];
-    });
-
     if (paused) return;
-    const moved = Object.entries(screenPositions).some(([key, [x, y]]) => {
-      const prev = last.current[key];
-      return !prev || Math.abs(prev[0] - x) > 0.5 || Math.abs(prev[1] - y) > 0.5;
-    });
-    if (!moved) return;
-    last.current = screenPositions;
-    onUpdatePositions(screenPositions);
+    point.copy(DOCK_ANCHOR).project(camera);
+    const x = (point.x * 0.5 + 0.5) * size.width;
+    const y = (point.y * -0.5 + 0.5) * size.height;
+    const prev = last.current;
+    if (prev && Math.abs(prev[0] - x) <= 0.5 && Math.abs(prev[1] - y) <= 0.5) return;
+    last.current = [x, y];
+    onMove([x, y]);
   });
 
-  return null; // This component doesn't render anything
+  return null;
 }
 
 // Main Scene Component
 
 function SceneComponent({
   isDarkMode,
-  showIsland,
   showSea,
   deviceInfo,
   onNavigateToConnect,
@@ -2085,10 +1883,7 @@ function SceneComponent({
   // Labels wait until the camera has settled on the island view
   const [cameraAtHome, setCameraAtHome] = useState(false);
   const [hoveredSceneObject, setHoveredSceneObject] = useState<string | null>(null);
-  const [objectScreenPositions, setObjectScreenPositions] = useState<
-    Record<string, [number, number]>
-  >({});
-  const activeHoveredObject = hoveredSceneObject;
+  const [dockOnScreen, setDockOnScreen] = useState<[number, number] | undefined>();
 
   // Opening or closing a page clears any hover left over from the click, so
   // the labels come back on the island without a highlight
@@ -2103,7 +1898,7 @@ function SceneComponent({
   }, [focusPage]);
   const atHome = showHomeButtons && cameraAtHome;
   // Lit landmark: the open page's, or on the island view the chosen one.
-  // At night it shines (light and glow); by day it also sparkles.
+  // At night it shines (light and glow); by day it brightens a little.
   const litObject = focusPage
     ? PAGE_OBJECT[focusPage] ?? null
     : atHome
@@ -2116,10 +1911,10 @@ function SceneComponent({
   }, []);
 
   useEffect(() => {
-    if (!activeHoveredObject) {
+    if (!hoveredSceneObject) {
       document.body.style.cursor = 'default';
     }
-  }, [activeHoveredObject]);
+  }, [hoveredSceneObject]);
 
   const handleNavigation = useCallback(
     (page: string) => {
@@ -2182,7 +1977,7 @@ function SceneComponent({
       <PageCarousel
         isDarkMode={isDarkMode}
         deviceInfo={deviceInfo}
-        anchor={objectScreenPositions.stonehead}
+        anchor={dockOnScreen}
         selected={homePick}
         onSelect={setHomePick}
         onOpen={handleNavigation}
@@ -2273,9 +2068,8 @@ function SceneComponent({
             boundingBox={getBoundingBox([8, 8, 8])}
             position={[LANDMARK.chairs.x, 5, LANDMARK.chairs.z]}
             isDarkMode={isDarkMode}
-            externalHovered={activeHoveredObject === 'twochairs'}
+            externalHovered={hoveredSceneObject === 'twochairs'}
             spotlight={litObject === 'twochairs'}
-            sparkle={litObject === 'twochairs'}
           >
             <SimpleTwoChairs
               key={`twochairs-${isDarkMode}`}
@@ -2289,9 +2083,8 @@ function SceneComponent({
             boundingBox={getBoundingBox([20, 16, 16])}
             position={[LANDMARK.house.x - 1, 8, LANDMARK.house.z]}
             isDarkMode={isDarkMode}
-            externalHovered={activeHoveredObject === 'house'}
+            externalHovered={hoveredSceneObject === 'house'}
             spotlight={litObject === 'house'}
-            sparkle={litObject === 'house'}
           >
             <SimpleHouse key={`house-${isDarkMode}`} isDarkMode={isDarkMode} />
           </InteractiveObject>
@@ -2302,9 +2095,8 @@ function SceneComponent({
             boundingBox={getBoundingBox([6, 5, 7])}
             position={[LANDMARK.dog.x, LANDMARK.dog.ground + 2, LANDMARK.dog.z]}
             isDarkMode={isDarkMode}
-            externalHovered={activeHoveredObject === 'stonehead'}
+            externalHovered={hoveredSceneObject === 'stonehead'}
             spotlight={litObject === 'stonehead'}
-            sparkle={litObject === 'stonehead'}
           >
             <SimpleDog key={`dog-${isDarkMode}`} isDarkMode={isDarkMode} />
           </InteractiveObject>
@@ -2315,9 +2107,8 @@ function SceneComponent({
             boundingBox={getBoundingBox([10, 7, 10])}
             position={[LANDMARK.desk.x, 3.5, LANDMARK.desk.z]}
             isDarkMode={isDarkMode}
-            externalHovered={activeHoveredObject === 'surfboard'}
+            externalHovered={hoveredSceneObject === 'surfboard'}
             spotlight={litObject === 'surfboard'}
-            sparkle={litObject === 'surfboard'}
           >
             <SimpleComputerDesk
               key={`desk-${isDarkMode}`}
@@ -2370,11 +2161,7 @@ function SceneComponent({
           snap={snapCamera}
         />
 
-        {/* Screen Position Tracker */}
-        <ScreenPositionTracker
-          onUpdatePositions={setObjectScreenPositions}
-          paused={!!focusPage}
-        />
+        <DockTracker onMove={setDockOnScreen} paused={!!focusPage} />
       </Canvas>
     </div>
   );

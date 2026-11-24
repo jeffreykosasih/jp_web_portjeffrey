@@ -1,66 +1,28 @@
-import { useRef, useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 
-type UseClickSoundOptions = number | { click?: number };
+const CLICK_SOUND = '/assets/audio/sound_click.mp3';
 
-interface SoundRefs {
-  click: HTMLAudioElement | null;
-}
+/**
+ * The UI click. `isEnabled` is read at the moment of each click, so it
+ * follows the site's sound switch (the same one as the ocean waves) without
+ * re-rendering anything.
+ */
+export function useClickSound(volume: number, isEnabled: () => boolean) {
+  const audio = useRef<HTMLAudioElement | null>(null);
 
-// Audio paths for UI sounds
-const SOUND_PATHS = {
-  click: '/assets/audio/sound_click.mp3',
-} as const;
+  const playClickSound = useCallback(() => {
+    if (!isEnabled()) return;
+    // Created on the first click, after the visitor has interacted
+    if (!audio.current) {
+      audio.current = new Audio(CLICK_SOUND);
+      audio.current.preload = 'auto';
+    }
+    audio.current.volume = Math.min(Math.max(volume, 0), 1);
+    audio.current.currentTime = 0;
+    audio.current.play().catch(() => {
+      // Autoplay rules can block it; a missing click is harmless
+    });
+  }, [volume, isEnabled]);
 
-const clampVolume = (volume: number): number => Math.min(Math.max(volume, 0), 1);
-
-export function useClickSound(options: UseClickSoundOptions = 0.45) {
-  const audioRefs = useRef<SoundRefs>({
-    click: null,
-  });
-
-  const getVolumeForType = useCallback(
-    (): number => {
-      if (typeof options === 'number') {
-        return clampVolume(options);
-      }
-
-      const fallbackVolume = 0.45;
-      const volume = options.click ?? fallbackVolume;
-      return clampVolume(volume);
-    },
-    [options]
-  );
-
-  // Lazy audio initialization
-  const initializeAudio = useCallback(
-    () => {
-      if (!audioRefs.current.click) {
-        audioRefs.current.click = new Audio(SOUND_PATHS.click);
-        audioRefs.current.click.volume = getVolumeForType();
-        audioRefs.current.click.preload = 'auto';
-      }
-    },
-    [getVolumeForType]
-  );
-
-  // Play sound with autoplay policy handling
-  const playSound = useCallback(
-    () => {
-      initializeAudio();
-
-      const audio = audioRefs.current.click;
-      if (audio) {
-        audio.volume = getVolumeForType();
-        audio.currentTime = 0;
-        audio.play().catch(() => {
-          // Silently handle autoplay policy restrictions
-        });
-      }
-    },
-    [getVolumeForType, initializeAudio]
-  );
-
-  const playClickSound = useCallback(() => playSound(), [playSound]);
-
-  return { playClickSound, playSound };
+  return { playClickSound };
 }

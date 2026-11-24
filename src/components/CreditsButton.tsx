@@ -14,7 +14,6 @@ import {
 interface CreditsButtonProps {
   isDarkMode: boolean;
   onToggle: () => void;
-  isHidden?: boolean;
   deviceInfo?: DeviceInfo;
   /** Where to sit while a page drawer is open */
   dock?: ButtonDock | null;
@@ -23,13 +22,11 @@ interface CreditsButtonProps {
 export default function CreditsButton({
   isDarkMode,
   onToggle,
-  isHidden = false,
   deviceInfo,
   dock = null,
 }: CreditsButtonProps): React.JSX.Element | null {
   const [isHovered, setIsHovered] = React.useState(false);
 
-  if (isHidden) return null;
 
   const buttonPosition: ButtonPosition = 'bottom-left';
   const buttonStyles = getButtonStyles({

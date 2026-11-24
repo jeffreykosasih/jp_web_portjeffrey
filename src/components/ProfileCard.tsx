@@ -17,12 +17,7 @@ interface ProfileCardProps {
   showBehindGradient?: boolean;
   className?: string;
   enableTilt?: boolean;
-  miniAvatarUrl?: string;
   name?: string;
-  title?: string;
-  handle?: string;
-  status?: string;
-  showUserInfo?: boolean;
   isDarkMode?: boolean; // Keep compatibility with existing prop
 }
 
@@ -66,17 +61,11 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
   showBehindGradient = true,
   className = '',
   enableTilt = true,
-  miniAvatarUrl,
   name = PROFILE.name,
-  title = PROFILE.role,
-  handle = 'jeffreyk',
-  status = 'Online',
-  showUserInfo = true,
   isDarkMode = false,
 }) => {
   const wrapRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const animationHandlers = useMemo(() => {
@@ -279,14 +268,10 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
             src={avatarUrl}
             alt={`Photo of ${name || 'Jeffrey'}`}
             loading='lazy'
-            onLoad={() => {
-              setImageLoaded(true);
-              setImageError(false);
-            }}
+            onLoad={() => setImageError(false)}
             onError={(e) => {
               console.error('Profile image failed to load:', avatarUrl);
               setImageError(true);
-              setImageLoaded(false);
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
             }}

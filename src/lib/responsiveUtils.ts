@@ -35,70 +35,6 @@ export const ResponsiveValues = {
     tablet: 19,
     desktop: 20,
   },
-  textSizing: {
-    xs: {
-      mobile: '0.75rem',
-      landscapeMobile: '0.7rem',
-      tablet: '0.8rem',
-      desktop: '0.875rem',
-    },
-    small: {
-      mobile: '1rem',
-      landscapeMobile: '0.875rem',
-      tablet: '1.1rem',
-      desktop: '1.2rem',
-    },
-    medium: {
-      mobile: '1.25rem',
-      landscapeMobile: '1.1rem',
-      tablet: '1.4rem',
-      desktop: '1.5rem',
-    },
-    large: {
-      mobile: '1.75rem',
-      landscapeMobile: '1.4rem',
-      tablet: '2.25rem',
-      desktop: '2.5rem',
-    },
-    xlarge: {
-      mobile: '2.25rem',
-      landscapeMobile: '1.8rem',
-      tablet: '3rem',
-      desktop: '3.5rem',
-    },
-  },
-  spacing: {
-    xs: {
-      mobile: '8px',
-      landscapeMobile: '6px',
-      tablet: '10px',
-      desktop: '12px',
-    },
-    small: {
-      mobile: '16px',
-      landscapeMobile: '12px',
-      tablet: '20px',
-      desktop: '24px',
-    },
-    medium: {
-      mobile: '24px',
-      landscapeMobile: '16px',
-      tablet: '32px',
-      desktop: '40px',
-    },
-    large: {
-      mobile: '32px',
-      landscapeMobile: '24px',
-      tablet: '48px',
-      desktop: '64px',
-    },
-    xlarge: {
-      mobile: '48px',
-      landscapeMobile: '32px',
-      tablet: '64px',
-      desktop: '80px',
-    },
-  },
   borderRadius: {
     small: '8px',
     medium: '12px',
@@ -148,27 +84,6 @@ export const getBottomPositioning = (deviceInfo?: DeviceInfo) =>
 
 export const getIconSize = (deviceInfo?: DeviceInfo) =>
   `${getResponsiveValueComplete(deviceInfo, ResponsiveValues.iconSize)}px`;
-
-export const getTextSize = (
-  deviceInfo?: DeviceInfo,
-  size: 'xs' | 'small' | 'medium' | 'large' | 'xlarge' = 'medium'
-) => getResponsiveValueComplete(deviceInfo, ResponsiveValues.textSizing[size]);
-
-export const getSpacing = (
-  deviceInfo?: DeviceInfo,
-  size: 'xs' | 'small' | 'medium' | 'large' | 'xlarge' = 'medium'
-) => getResponsiveValueComplete(deviceInfo, ResponsiveValues.spacing[size]);
-
-// CSS media query helpers for consistent breakpoints
-export const mediaQueries = {
-  mobile: `@media (max-width: ${Breakpoints.mobile - 1}px)`,
-  tabletUp: `@media (min-width: ${Breakpoints.mobile}px)`,
-  desktopUp: `@media (min-width: ${Breakpoints.desktop}px)`,
-  landscape: '@media (orientation: landscape)',
-  portrait: '@media (orientation: portrait)',
-  retina:
-    '@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi)',
-} as const;
 
 // Theme color schemes
 export const ColorSchemes = {

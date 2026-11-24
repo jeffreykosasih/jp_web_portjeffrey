@@ -14,11 +14,9 @@ interface BurgerMenuProps {
   onOpenChange?: (isOpen: boolean, shouldAnimate?: boolean) => void;
   activePage?: PageName | null;
   onHideThemeToggle?: (hide: boolean) => void;
-  onHideCreditsButton?: (hide: boolean) => void;
   shouldAnimate?: boolean;
   deviceInfo?: DeviceInfo;
   onPlayClickSound?: () => void;
-  slideDirection?: 'left' | 'right';
 }
 
 // Icon Components
@@ -100,11 +98,9 @@ export default function BurgerMenu({
   onOpenChange,
   activePage,
   onHideThemeToggle,
-  onHideCreditsButton,
   shouldAnimate = true,
   deviceInfo,
   onPlayClickSound,
-  slideDirection = 'right',
 }: BurgerMenuProps): React.JSX.Element {
   // State management
   const [internalIsOpen, setInternalIsOpen] = useState(false);

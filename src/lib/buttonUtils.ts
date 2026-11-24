@@ -8,7 +8,6 @@ import {
   getButtonColors,
   ResponsiveValues,
   Transitions,
-  getResponsiveValue,
 } from './responsiveUtils';
 
 export type ButtonPosition =
@@ -92,14 +91,6 @@ const getResponsiveButtonSize = (
 };
 
 // Touch-friendly button sizing for mobile
-export const getTouchTargetSize = (deviceInfo?: DeviceInfo) =>
-  getResponsiveValue(deviceInfo, {
-    mobile: 44,
-    landscapeMobile: 40,
-    tablet: 48,
-    desktop: 44,
-  });
-
 export const getResponsiveIconSize = (deviceInfo?: DeviceInfo) =>
   getIconSize(deviceInfo);
 
@@ -140,26 +131,19 @@ export interface ButtonDock {
 const DOCK_GAP_PX = 12;
 // The strip phones keep free beside a drawer: 3.25rem, measured from the
 // root font size so it matches the drawer exactly
-const phoneStripPx = () => {
-  if (typeof window === 'undefined') return 52;
-  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-  return 3.25 * rem;
-};
-
 // Portrait phones: all seven buttons sit in one row at the bottom of the
 // open drawer, on a band of their own (see PhoneButtonBand)
 const FOOTER_SLOTS = 7;
-const FOOTER_GAP_PX = 6;
-const FOOTER_GROUP_GAP_PX = 12; // between the page buttons and the rest
+const FOOTER_GAP_PX = 10;
+const FOOTER_GROUP_GAP_PX = 20; // between the page buttons and the rest
 const FOOTER_SIDE_PADDING_PX = 10;
 export const FOOTER_BOTTOM_PX = 12;
 
-export const getPhoneFooter = (freeSide: 'left' | 'right') => {
+export const getPhoneFooter = () => {
   const vw = typeof window !== 'undefined' ? window.innerWidth : 375;
-  const strip = phoneStripPx();
-  const drawerWidth = vw - strip;
-  // The drawer covers the side opposite the free strip
-  const drawerLeft = freeSide === 'left' ? strip : 0;
+  // The drawer is a full-screen sheet on portrait phones
+  const drawerWidth = vw;
+  const drawerLeft = 0;
   const room = drawerWidth - 2 * FOOTER_SIDE_PADDING_PX;
   const size = Math.min(
     40,
@@ -188,7 +172,7 @@ export const getDockedStyles = (
   };
   if (portraitPhone) {
     // One row along the bottom of the drawer, on its own band
-    const footer = getPhoneFooter(dock.side);
+    const footer = getPhoneFooter();
     const slot = dock.slot ?? 0;
     const x =
       footer.start +

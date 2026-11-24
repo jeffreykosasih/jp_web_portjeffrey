@@ -15,8 +15,6 @@ export interface DeviceInfo {
 }
 
 // Responsive breakpoint types
-export type DeviceType = 'mobile' | 'landscapeMobile' | 'tablet' | 'desktop';
-
 // Common responsive value structure
 export interface ResponsiveValues<T> {
   mobile: T;
@@ -33,5 +31,3 @@ export type PageName =
   | 'portfolio'
   | 'connect';
 
-// Component size variants
-export type SizeVariant = 'xs' | 'small' | 'medium' | 'large' | 'xlarge';

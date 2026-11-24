@@ -8,7 +8,6 @@ import ProjectRoulette from './ProjectRoulette';
 interface PortfolioPageProps {
   isVisible: boolean;
   onClose: () => void;
-  onOpenBurgerMenu: (slideDirection?: 'left' | 'right') => void;
   isDarkMode: boolean;
   shouldAnimateText?: boolean;
   deviceInfo?: DeviceInfo;

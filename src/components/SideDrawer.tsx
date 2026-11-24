@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { faChevronLeft, faChevronRight, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { DeviceInfo } from '../lib/types';
 import { ResponsiveValues } from '../lib/responsiveUtils';
 import { WriteOn, joinsAt } from './Letters';
@@ -44,11 +44,12 @@ export function getDrawerDevice(deviceInfo?: DeviceInfo): DrawerDevice {
   return 'desktop';
 }
 
-// Half the screen on larger screens; phones keep a strip free for the
-// close tab and a glimpse of the landmark
+// Half the screen on larger screens. Portrait phones get a full-screen sheet
+// closed from an X in the corner; other sizes keep a free side with the
+// landmark in it and a close tab on the drawer's edge.
 const DRAWER_WIDTH: Record<DrawerDevice, string> = {
   'mobile-landscape': '58vw',
-  'mobile-portrait': 'calc(100vw - 3.25rem)',
+  'mobile-portrait': '100vw',
   tablet: 'var(--drawer-tablet-width)',
   desktop: '50vw', // an exact half: the camera centres the landmark in the other half
 };
@@ -187,7 +188,41 @@ export default function SideDrawer({
             flexDirection: 'column',
           }}
         >
-          {/* Close tab, centred on the drawer's outer edge */}
+          {/* Close: an X in the top corner on portrait phones (the sheet fills
+              the screen), otherwise a tab centred on the drawer's outer edge */}
+          {device === 'mobile-portrait' ? (
+            <motion.button
+              type='button'
+              onClick={() => {
+                onPlayClickSound?.();
+                onClose();
+              }}
+              aria-label={`Close ${label.toLowerCase()}`}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.25, delay: 0.35 }}
+              whileTap={{ scale: 0.9 }}
+              style={{
+                position: 'absolute',
+                top: 'max(env(safe-area-inset-top), 0.85rem)',
+                right: '0.85rem',
+                zIndex: 2,
+                width: '2.75rem',
+                height: '2.75rem',
+                borderRadius: '50%',
+                border: 'none',
+                backgroundColor: tab,
+                color: 'var(--ui-accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 0.375rem 1rem rgba(0, 0, 0, 0.25)',
+              }}
+            >
+              <FontAwesomeIcon icon={faXmark} style={{ fontSize: '20px' }} />
+            </motion.button>
+          ) : (
           <motion.button
             type='button'
             onClick={() => {
@@ -224,6 +259,7 @@ export default function SideDrawer({
               style={{ fontSize: '18px' }}
             />
           </motion.button>
+          )}
 
           <div
             style={{

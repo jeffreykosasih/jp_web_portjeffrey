@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DeviceInfo } from '../lib/types';
 
 interface AppLoadingScreenProps {
-  onLoadingComplete: () => void;
   onExploreClick: () => void;
   isDarkMode: boolean;
   deviceInfo?: DeviceInfo;
@@ -71,7 +70,6 @@ function OpeningWaves({ isDarkMode, leaving = false }: { isDarkMode: boolean; le
 }
 
 export default function AppLoadingScreen({
-  onLoadingComplete,
   onExploreClick,
   isDarkMode,
   deviceInfo,
@@ -126,7 +124,6 @@ export default function AppLoadingScreen({
     // Start the transition sequence
     setTimeout(() => {
       onExploreClick();
-      // onLoadingComplete(); // Removed duplicate call since both functions do the same thing
     }, TRANSITION_DURATION);
   };
 

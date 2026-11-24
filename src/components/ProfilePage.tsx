@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import ProfileCard from './ProfileCard';
 import SideDrawer, { DrawerTitle, getDrawerDevice } from './SideDrawer';
@@ -8,7 +7,6 @@ import { ABOUT, PROFILE } from '../lib/profile';
 interface ProfilePageProps {
   isVisible: boolean;
   onClose: () => void;
-  onOpenBurgerMenu: (slideDirection?: 'left' | 'right') => void;
   isDarkMode: boolean;
   shouldAnimateText?: boolean;
   deviceInfo?: DeviceInfo;
@@ -77,7 +75,6 @@ export default function ProfilePage({
             className='pc-compact'
             isDarkMode={isDarkMode}
             name={PROFILE.name}
-            title={PROFILE.role}
           />
         </motion.div>
       </div>

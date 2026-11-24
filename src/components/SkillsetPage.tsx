@@ -1,18 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faMousePointer,
   faEllipsis,
   faTimes,
 } from '@fortawesome/free-solid-svg-icons';
 import { DeviceInfo } from '../lib/types';
 import SideDrawer, { DrawerTitle, DRAWER_COLORS } from './SideDrawer';
-import {
-  getResponsiveValue,
-  getSpacing,
-  ResponsiveValues,
-} from '../lib/responsiveUtils';
 import {
   faJs,
   faReact,
@@ -36,7 +30,6 @@ import {
 interface SkillsetPageProps {
   isVisible: boolean;
   onClose: () => void;
-  onOpenBurgerMenu: (slideDirection?: 'left' | 'right') => void;
   isDarkMode: boolean;
   shouldAnimateText?: boolean;
   deviceInfo?: DeviceInfo;
@@ -173,7 +166,6 @@ const adobeApps: SkillItem[] = [
 export default function SkillsetPage({
   isVisible,
   onClose,
-  onOpenBurgerMenu,
   isDarkMode,
   shouldAnimateText = true,
   deviceInfo,
@@ -204,76 +196,6 @@ export default function SkillsetPage({
   const deviceType = getDeviceType();
 
 
-  // Responsive styling based on device (following ProfilePage pattern)
-  const getContainerStyles = () => {
-    const configs = {
-      'mobile-landscape': {
-        padding: `max(env(safe-area-inset-top), var(--space-lg)) var(--space-xl) max(env(safe-area-inset-bottom), var(--space-lg)) var(--space-xl)`,
-        height: '100dvh',
-      },
-      'mobile-portrait': {
-        padding: `max(env(safe-area-inset-top), var(--space-lg)) var(--space-base) max(env(safe-area-inset-bottom), var(--space-3xl)) var(--space-base)`,
-        height: '100dvh',
-      },
-      tablet: {
-        padding: 'var(--space-3xl) var(--space-xl)',
-      },
-      desktop: {
-        padding: 'var(--space-2xl) var(--space-xl)',
-      },
-    };
-
-    return {
-      position: 'relative' as const,
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column' as const,
-      // The content block grows to fill the panel, so start at the top and
-      // let tall content scroll instead of being cut off
-      justifyContent: 'flex-start',
-      alignItems: 'center',
-      color: 'var(--ui-ink)',
-      overflowY: 'auto' as const,
-      ...configs[deviceType],
-    };
-  };
-
-  const getTitleStyles = () => {
-    const configs = {
-      'mobile-landscape': {
-        fontSize: 'var(--text-5xl)',
-        marginBottom: 'var(--space-lg)',
-        marginTop: 'var(--space-sm)',
-      },
-      'mobile-portrait': {
-        fontSize: 'var(--mobile-text-display)',
-        marginBottom: 'var(--space-lg)',
-        marginTop: 'var(--space-lg)',
-      },
-      tablet: {
-        fontSize: 'var(--tablet-text-display)',
-        marginBottom: 'calc(var(--space-xl) + 0.3125rem)',
-      },
-      desktop: {
-        fontSize: 'var(--text-6xl)',
-        marginTop: 'var(--space-2xl)',
-      },
-    };
-
-    return {
-      fontWeight: '900',
-      fontFamily: "'Baloo 2', sans-serif",
-      background: 'linear-gradient(45deg, #ffffff, #e2e8f0)',
-      WebkitBackgroundClip: 'text',
-      backgroundClip: 'text',
-      color: 'transparent',
-      letterSpacing: '-0.02em',
-      textAlign: 'center' as const,
-      ...configs[deviceType],
-    };
-  };
-
   const getCategoryButtonStyles = (category: SkillCategory) => {
     const isActive = activeCategory === category;
     const isPhone =
@@ -290,37 +212,6 @@ export default function SkillsetPage({
       fontSize: isPhone ? '0.875rem' : '1rem',
       cursor: 'pointer',
       transition: 'background-color 0.2s ease, color 0.2s ease',
-    };
-  };
-
-  const getFooterStyles = () => {
-    const configs = {
-      'mobile-landscape': {
-        fontSize: 'var(--text-sm)',
-        padding: 'var(--space-lg) var(--space-base)',
-      },
-      'mobile-portrait': {
-        fontSize: 'var(--text-sm)',
-        padding: 'var(--space-lg) var(--space-base)',
-      },
-      tablet: {
-        fontSize: 'var(--text-base)',
-        padding: 'var(--space-lg) var(--space-3xl)',
-      },
-      desktop: {
-        fontSize: 'var(--text-base)',
-        padding: 'var(--space-lg) var(--space-3xl)',
-      },
-    };
-
-    return {
-      lineHeight: '1.6',
-      fontFamily: "'Baloo 2', sans-serif",
-      fontWeight: '400',
-      color: 'var(--ui-ink-muted)',
-      textAlign: 'center' as const,
-      marginTop: 'auto',
-      ...configs[deviceType],
     };
   };
 

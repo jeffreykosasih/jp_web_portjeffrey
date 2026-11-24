@@ -169,10 +169,10 @@ export function PhoneButtonBand({
           transition={{ duration: 0.25, delay: 0.25 }}
           style={{
             position: 'fixed',
-            left: getPhoneFooter(freeSide).drawerLeft,
-            width: getPhoneFooter(freeSide).drawerWidth,
+            left: getPhoneFooter().drawerLeft,
+            width: getPhoneFooter().drawerWidth,
             bottom: 0,
-            height: `calc(${getPhoneFooter(freeSide).size + FOOTER_BOTTOM_PX * 2}px + env(safe-area-inset-bottom))`,
+            height: `calc(${getPhoneFooter().size + FOOTER_BOTTOM_PX * 2}px + env(safe-area-inset-bottom))`,
             zIndex: 1505, // above the drawer, below its buttons
             backgroundColor: isDarkMode ? '#0a1222' : '#082a52',
             borderTop: `1px solid ${isDarkMode ? 'rgba(255, 211, 107, 0.35)' : 'rgba(255, 255, 255, 0.3)'}`,
