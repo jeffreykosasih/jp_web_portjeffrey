@@ -193,6 +193,19 @@ function App(): React.JSX.Element {
     setTimeout(() => {
       setIsLoading(false);
     }, 100);
+
+    // Portrait phones open on the profile: the camera flies straight to its
+    // landmark and the profile page opens once the tide has gone out.
+    // Closing it shows the whole island as usual.
+    if (deviceInfo.isMobile && deviceInfo.orientation === 'portrait') {
+      setShouldAnimatePageText(true);
+      setFocusedPage('profile');
+      if (pageOpenTimer.current) window.clearTimeout(pageOpenTimer.current);
+      pageOpenTimer.current = window.setTimeout(
+        () => setActivePage('profile'),
+        1600
+      );
+    }
   };
 
   useEffect(() => {
