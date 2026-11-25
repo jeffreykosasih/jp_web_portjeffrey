@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
+  AnimatePresence,
   animate,
   motion,
   useMotionValue,
@@ -14,10 +15,8 @@ import {
 import type { Project } from '../lib/projects';
 
 // A roulette of project covers: the covers sit on a wheel that turns (arrows,
-// dots, arrow keys, drag or swipe), the
-// one at the front is the chosen project, and its words only come up when
-// it is hovered (or tapped on a touch screen), so the page is pictures
-// first rather than a wall of text.
+// dots, arrow keys, drag or swipe), the one at the front is the chosen
+// project, and its words show below the dots, one project at a time.
 //
 // The wheel always has at least MIN_SLOTS covers (short lists repeat), so
 // the seam where it wraps round stays out of sight behind the side covers.
@@ -33,6 +32,48 @@ const offsetFrom = (slot: number, pos: number, size: number) => {
   return d;
 };
 
+// A project's words: what it is, its name, one line on it, and its links
+function ProjectDetails({ project }: { project: Project }) {
+  return (
+    <>
+      <p
+        style={{
+          margin: 0,
+          fontSize: '0.75rem',
+          fontWeight: 700,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: 'var(--ui-accent)',
+        }}
+      >
+        {project.kind}
+      </p>
+      <h2
+        className='type-display'
+        style={{ margin: 0, fontSize: '1.3rem', lineHeight: 1.5, color: 'var(--ui-ink)' }}
+      >
+        {project.title}
+      </h2>
+      <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.4 }}>{project.summary}</p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.4rem' }}>
+        {project.links.map((link) => (
+          <a
+            key={link.label}
+            href={link.href}
+            target='_blank'
+            rel='noopener noreferrer'
+            aria-label={`${project.title}: ${link.label} (opens in a new tab)`}
+            onClick={(e) => e.stopPropagation()}
+            className='roulette-link'
+          >
+            {link.label} <span aria-hidden='true'>↗</span>
+          </a>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function Cover({
   project,
   slot,
@@ -41,8 +82,6 @@ function Cover({
   width,
   height,
   isFront,
-  revealed,
-  onReveal,
   onPick,
 }: {
   project: Project;
@@ -52,8 +91,6 @@ function Cover({
   width: number;
   height: number;
   isFront: boolean;
-  revealed: boolean;
-  onReveal: (on: boolean) => void;
   onPick: () => void;
 }) {
   // Place, tilt and fade each cover from its distance to the front
@@ -70,20 +107,13 @@ function Cover({
 
   return (
     <motion.div
+      // The front cover is announced; the others are there to look at, and
+      // clicking one turns the wheel to it
       role='group'
       aria-roledescription='slide'
       aria-label={project.title}
-      // Only the front cover can be reached by keyboard; the others are
-      // there to look at (clicking one turns the wheel to it)
-      inert={!isFront}
-      tabIndex={isFront ? 0 : -1}
-      onMouseEnter={() => isFront && onReveal(true)}
-      onMouseLeave={() => isFront && onReveal(false)}
-      onFocus={() => isFront && onReveal(true)}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) onReveal(false);
-      }}
-      onClick={() => (isFront ? onReveal(!revealed) : onPick())}
+      aria-hidden={!isFront}
+      onClick={() => !isFront && onPick()}
       style={{
         position: 'absolute',
         left: '50%',
@@ -117,79 +147,21 @@ function Cover({
         aria-hidden='true'
         style={{ position: 'absolute', inset: 0, backgroundColor: '#000', opacity: shade, pointerEvents: 'none' }}
       />
-      {/* The words: hidden until the front cover is hovered, focused or
-          tapped. A deep panel keeps the white text above 7:1. */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          gap: '0.3rem',
-          padding: '1rem 1.1rem 1.1rem',
-          background:
-            'linear-gradient(to top, rgba(6, 22, 48, 0.96) 0%, rgba(6, 22, 48, 0.9) 55%, rgba(6, 22, 48, 0.55) 100%)',
-          color: '#ffffff',
-          opacity: revealed ? 1 : 0,
-          transform: revealed ? 'translateY(0)' : 'translateY(0.75rem)',
-          transition: 'opacity 0.25s ease, transform 0.3s ease',
-          pointerEvents: revealed ? 'auto' : 'none',
-        }}
-      >
-        <p
-          style={{
-            margin: 0,
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: 'var(--ui-accent)',
-          }}
-        >
-          {project.kind}
-        </p>
-        <h2
-          className='type-display'
-          style={{ margin: 0, fontSize: '1.3rem', lineHeight: 1.5, color: '#ffffff' }}
-        >
-          {project.title}
-        </h2>
-        <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.4 }}>{project.summary}</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.4rem' }}>
-          {project.links.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              target='_blank'
-              rel='noopener noreferrer'
-              aria-label={`${project.title}: ${link.label} (opens in a new tab)`}
-              onClick={(e) => e.stopPropagation()}
-              className='roulette-link'
-            >
-              {link.label} <span aria-hidden='true'>↗</span>
-            </a>
-          ))}
-        </div>
-      </div>
     </motion.div>
   );
 }
 
 export default function ProjectRoulette({
   projects,
-  isTouch,
   onPlayClickSound,
 }: {
   projects: Project[];
-  isTouch: boolean;
   onPlayClickSound?: () => void;
 }) {
   const n = projects.length;
   const slots = n * Math.ceil(MIN_SLOTS / n);
   const pos = useMotionValue(0);
   const [front, setFront] = useState(0); // slot at the front
-  const [revealed, setRevealed] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageWidth, setStageWidth] = useState(360);
 
@@ -203,19 +175,17 @@ export default function ProjectRoulette({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const width = Math.round(Math.min(380, Math.max(230, stageWidth * 0.62)));
+  const width = Math.round(Math.min(380, Math.max(230, stageWidth * 0.78)));
   // tall enough for the words on narrow screens (the image is cropped to fit)
-  const height = Math.round(Math.max(width * 0.72, 225));
+  const height = Math.round(width * 0.625); // 16:10, landscape
 
   // A new list (switching Web / Design) starts again from the first
   useEffect(() => {
     pos.set(0);
     setFront(0);
-    setRevealed(false);
   }, [projects, pos]);
 
   const settle = (target: number) => {
-    setRevealed(false);
     // the dots (and which cover counts as the front) move straight away
     setFront(wrap(Math.round(target), slots));
     animate(pos, target, { type: 'spring', stiffness: 170, damping: 24 }).then(() => {
@@ -254,7 +224,6 @@ export default function ProjectRoulette({
     if (Math.abs(dx) > 6 && !d.moved) {
       d.moved = true;
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      setRevealed(false);
     }
     if (d.moved) pos.set(d.start - dx / (width * STEP_X));
   };
@@ -336,8 +305,6 @@ export default function ProjectRoulette({
                 width={width}
                 height={height}
                 isFront={slot === front}
-                revealed={slot === front && revealed}
-                onReveal={setRevealed}
                 onPick={() => pick(slot)}
               />
             ))}
@@ -409,10 +376,30 @@ export default function ProjectRoulette({
         })}
       </div>
 
+      {/* The front project's words, below the dots */}
+      <AnimatePresence mode='wait' initial={false}>
+        <motion.div
+          key={current.title}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          style={{
+            width: '100%',
+            maxWidth: '26rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.3rem',
+            marginTop: '1rem',
+            textAlign: 'left',
+          }}
+        >
+          <ProjectDetails project={current} />
+        </motion.div>
+      </AnimatePresence>
+
       <p aria-live='polite' className='sr-only'>
-        {`${wrap(front, n) + 1} of ${n}: ${current.title}. ${
-          isTouch ? 'Tap the card to read more.' : 'Hover or focus the card to read more.'
-        }`}
+        {`${wrap(front, n) + 1} of ${n}: ${current.title}`}
       </p>
     </div>
   );

@@ -658,6 +658,36 @@ function SimpleBoat({
     }
   }), [scene, isDarkMode]);
 
+  // The mast light is the highest part of the model. At night its bulb glows
+  // from within, with a soft halo and real light around it; by day it is off.
+  const mastLight = useMemo(() => {
+    if (!clonedScene || !isDarkMode) return null;
+    clonedScene.updateMatrixWorld(true);
+    let top: { mesh: any; box: THREE.Box3 } | null = null;
+    clonedScene.traverse((child: any) => {
+      if (!child.isMesh) return;
+      const box = new THREE.Box3().setFromObject(child);
+      if (!top || box.max.y > top.box.max.y) top = { mesh: child, box };
+    });
+    if (!top) return null;
+    const { mesh, box } = top as { mesh: any; box: THREE.Box3 };
+    const bulb = mesh.material;
+    if (bulb?.emissive) {
+      bulb.color.set('#ffffff');
+      bulb.emissive.set('#fff4c2');
+      bulb.emissiveIntensity = 2.2;
+    }
+    return box.getCenter(new THREE.Vector3());
+  }, [clonedScene, isDarkMode]);
+  const halo = useRef<THREE.Sprite>(null);
+  const glow = useMemo(() => getGlowTexture(), []);
+  useFrame(({ clock }) => {
+    if (!halo.current) return;
+    // world size of ~5 units (the boat group is scaled up), breathing slowly
+    const base = 5 / BOAT_SCALE;
+    halo.current.scale.setScalar(base * (1 + Math.sin(clock.getElapsedTime() * 1.6) * 0.12));
+  });
+
   // The model's origin is off to one side; centre it so the boat turns in place
   const boatCenter = useMemo(() => {
     if (!clonedScene) return new THREE.Vector3();
@@ -691,6 +721,22 @@ function SimpleBoat({
     >
       <group position={boatCenter}>
         <primitive object={clonedScene} />
+        {mastLight && (
+          <group position={mastLight}>
+            <sprite ref={halo} renderOrder={10}>
+              <spriteMaterial
+                map={glow}
+                color='#fff2b8'
+                opacity={0.95}
+                transparent
+                depthWrite={false}
+                blending={THREE.AdditiveBlending}
+                toneMapped={false}
+              />
+            </sprite>
+            <pointLight color='#ffe7a8' intensity={70} distance={26} decay={1.5} />
+          </group>
+        )}
       </group>
     </group>
   );
@@ -1632,10 +1678,10 @@ const FOCUS_TARGETS: Record<string, THREE.Vector3> = {
 // Scaled to each landmark's real size, so each fills a similar share of the view
 const FOCUS_DISTANCE_SCALE: Record<string, number> = { skillset: 0.8, profile: 0.55, portfolio: 1.6 };
 
-// Phones: where the resting view looks (the dog on the dock) and how far
-// back the camera sits from it
-const PHONE_HOME_TARGET = new THREE.Vector3(LANDMARK.dog.x, LANDMARK.dog.ground + 1, LANDMARK.dog.z);
-const PHONE_HOME_DISTANCE = { portrait: 34, landscape: 22 };
+// Phones rest on a close, centred view of the landmark chosen with the < >
+// arrows (the whole island is too small to read on a phone), at this share
+// of the distance used when its page is open
+const PHONE_PREVIEW_PULLBACK = 1;
 
 // Which landmark belongs to which page
 const PAGE_OBJECT: Record<string, string> = {
@@ -1645,12 +1691,6 @@ const PAGE_OBJECT: Record<string, string> = {
   skillset: 'surfboard',
 };
 
-// Pages whose panel is a drawer on the left: the camera frames the model in
-// the space the drawer leaves free on the right.
-// Drawer side per page; the camera frames the landmark on the other side
-const LEFT_DRAWER_PAGES = new Set(['skillset', 'connect']);
-const RIGHT_DRAWER_PAGES = new Set(['portfolio', 'profile']);
-
 const ORIGIN = new THREE.Vector3(0, 0, 0);
 
 // Camera that eases in on load, flies to a landmark when its page opens,
@@ -1659,12 +1699,16 @@ function AnimatedCamera({
   deviceInfo,
   triggerInitialZoom = false,
   focusPage = null,
+  previewPage = null,
   snap = false,
   onHomeChange,
 }: {
   deviceInfo?: any;
   triggerInitialZoom?: boolean;
   focusPage?: string | null;
+  /** Phones: the page chosen on the island view, whose landmark the camera
+   * frames close up while no page is open */
+  previewPage?: string | null;
   snap?: boolean;
   /** Called with true once the camera has settled on the island view, and
    * false as soon as it starts moving away (or toward it) */
@@ -1715,10 +1759,8 @@ function AnimatedCamera({
     !!deviceInfo?.isMobile && deviceInfo?.orientation === 'portrait';
   // How far the camera sits from a landmark when zoomed in
   const focusDistance = isPortraitPhone ? 42 : deviceInfo?.isMobile ? 30 : 34;
-  // Phones rest on a close view of the dog on the dock instead of the
-  // whole island, which is too small to read on a phone screen
   const isPhone = !!deviceInfo?.isMobile || !!deviceInfo?.isLandscapeMobile;
-  const phoneHomeDistance = isPortraitPhone ? PHONE_HOME_DISTANCE.portrait : PHONE_HOME_DISTANCE.landscape;
+  const preview = !focusPage && isPhone && previewPage ? previewPage : null;
 
   // Start a little further back, then ease in once the island is revealed
   const startingPosition: [number, number, number] = [
@@ -1755,14 +1797,16 @@ function AnimatedCamera({
       pos.copy(target).addScaledVector(dir, distance);
       pos.y = Math.max(pos.y, target.y + 4);
       look.copy(target);
-    } else if (isPhone) {
-      // Same approach line as a landmark zoom, a little further back so the
-      // whole dock fits
-      const dock = PHONE_HOME_TARGET;
-      dir.copy(home).sub(dock).normalize();
-      pos.copy(dock).addScaledVector(dir, phoneHomeDistance);
-      pos.y = Math.max(pos.y, dock.y + 4);
-      look.copy(dock);
+    } else if (preview) {
+      // Phones: the chosen landmark, centred and close, on the same approach
+      // line as its page zoom but a little further back. Stepping with the
+      // < > arrows flies the camera from one landmark to the next.
+      const landmark = FOCUS_TARGETS[preview];
+      dir.copy(home).sub(landmark).normalize();
+      const distance = focusDistance * (FOCUS_DISTANCE_SCALE[preview] ?? 1) * PHONE_PREVIEW_PULLBACK;
+      pos.copy(landmark).addScaledVector(dir, distance);
+      pos.y = Math.max(pos.y, landmark.y + 4);
+      look.copy(landmark);
     } else {
       pos.copy(home);
       look.copy(ORIGIN);
@@ -1771,13 +1815,8 @@ function AnimatedCamera({
     // Shift the lens (not the aim) by half the drawer's width, so the
     // landmark sits exactly in the centre of the part of the screen the
     // drawer leaves free. Same share of the screen as SideDrawer's width.
-    const drawerSide = !target
-      ? 0
-      : LEFT_DRAWER_PAGES.has(focusPage!)
-      ? -1
-      : RIGHT_DRAWER_PAGES.has(focusPage!)
-      ? 1
-      : 0;
+    // Every page's drawer is on the right, so the landmark goes left
+    const drawerSide = target ? 1 : 0;
     // Measure the drawer that is on screen every few frames; until one is
     // there, fall back to the widths SideDrawer uses
     measureFrame.current = (measureFrame.current + 1) % 10;
@@ -1805,7 +1844,7 @@ function AnimatedCamera({
 
     // Each new destination starts a fresh tween from wherever the camera is,
     // eased in and out so it never jumps or snaps to a stop.
-    const key = focusPage ?? 'home';
+    const key = focusPage ?? (preview ? `preview:${preview}` : 'home');
     const tw = tween.current;
     if (tw.key !== key) {
       tw.key = key;
@@ -1831,9 +1870,12 @@ function AnimatedCamera({
     if (p >= 1) introDone.current = true;
 
     // Tell the scene whether the camera is resting on the island view, so
-    // the island labels only show once a zoom in or out has finished
-    // (not before the opening zoom has run, so labels don't flash at load)
-    const atHome = tw.key === 'home' && p >= 1 && introDone.current;
+    // the page picker only shows once a zoom in or out has finished (not
+    // before the opening zoom has run, so it doesn't flash at load). On
+    // phones it stays up while the arrows fly the camera between landmarks.
+    const atHome =
+      introDone.current &&
+      (tw.key === 'home' ? p >= 1 : tw.key.startsWith('preview:'));
     if (atHomeRef.current !== atHome) {
       atHomeRef.current = atHome;
       onHomeChange?.(atHome);
@@ -1914,6 +1956,8 @@ function SceneComponent({
     if (focusPage) setHomePick(focusPage as CarouselPage);
   }, [focusPage]);
   const atHome = showHomeButtons && cameraAtHome;
+  const sceneCovered =
+    !!focusPage && !!deviceInfo?.isMobile && deviceInfo?.orientation === 'portrait';
   // Lit landmark: the open page's, or on the island view the chosen one.
   // At night it shines (light and glow); by day it brightens a little.
   const litObject = focusPage
@@ -2014,18 +2058,13 @@ function SceneComponent({
           zIndex: 1,
           background: 'transparent',
         }}
-        frameloop='always'
-        dpr={(() => {
-          if (typeof window === 'undefined') return 1;
-          const max = deviceInfo?.isMobile ? 1.5 : 2;
-          return Math.min(window.devicePixelRatio || 1, max);
-        })()}
+        // On portrait phones an open page is a full-screen sheet, so the
+        // island behind it stops drawing until the page closes
+        frameloop={sceneCovered ? 'never' : 'always'}
+        // Phones draw at up to 1.25x their CSS pixels: sharp enough, and
+        // far fewer pixels for the ocean shader than the screen's 3x
+        dpr={[1, deviceInfo?.isMobile || deviceInfo?.isLandscapeMobile ? 1.25 : 2]}
         onCreated={({ gl }) => {
-          // Better performance on mobile devices
-          const max = deviceInfo?.isMobile ? 1.5 : 2;
-          const pixelRatio = Math.min(window.devicePixelRatio || 1, max);
-          gl.setPixelRatio(pixelRatio);
-
           // Ensure accurate color rendering
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.NoToneMapping;
@@ -2175,6 +2214,7 @@ function SceneComponent({
           deviceInfo={deviceInfo}
           triggerInitialZoom={triggerInitialZoom}
           focusPage={focusPage}
+          previewPage={homePick}
           snap={snapCamera}
         />
 

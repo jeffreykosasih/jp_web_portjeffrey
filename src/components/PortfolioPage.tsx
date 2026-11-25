@@ -14,9 +14,8 @@ interface PortfolioPageProps {
   onPlayClickSound?: () => void;
 }
 
-// Projects: Web / Design tabs over a roulette of project covers. Only the
-// covers show at first; a project's words come up when its cover is hovered
-// (or tapped on a touch screen).
+// Projects: Web / Design tabs over a roulette of landscape project covers,
+// with the front project's words below it.
 export default function PortfolioPage({
   isVisible,
   onClose,
@@ -29,9 +28,6 @@ export default function PortfolioPage({
   const device = getDrawerDevice(deviceInfo);
   const isPhone = device === 'mobile-portrait' || device === 'mobile-landscape';
   const shown = React.useMemo(() => projects.filter((p) => p.category === category), [category]);
-  // Touch screens have no hover, so the cover is tapped instead
-  const isTouch =
-    typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches;
 
   return (
     <SideDrawer
@@ -40,7 +36,6 @@ export default function PortfolioPage({
       isDarkMode={isDarkMode}
       deviceInfo={deviceInfo}
       label='Projects'
-      side='right'
       align='top'
       onPlayClickSound={onPlayClickSound}
     >
@@ -106,7 +101,6 @@ export default function PortfolioPage({
         <ProjectRoulette
           key={category}
           projects={shown}
-          isTouch={isTouch}
           onPlayClickSound={onPlayClickSound}
         />
       </motion.div>

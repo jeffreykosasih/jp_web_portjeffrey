@@ -77,11 +77,11 @@ export const DRAWER_INK = {
   dark: { ink: '#fff1cc', muted: '#ecdcae', accent: '#ffd36b', line: 'rgba(255, 211, 107, 0.75)' },
 };
 
-// Deep, near-opaque panels so white text stays above 7:1 (WCAG AAA)
-// whatever bright scene is behind it
+// Deep, solid panels: white text stays above 7:1 (WCAG AAA), and with no
+// backdrop blur a see-through panel would show the island behind it
 export const DRAWER_COLORS = {
-  light: { panel: 'rgba(11, 58, 115, 0.95)', tab: '#0b3a73' },
-  dark: { panel: 'rgba(16, 28, 52, 0.95)', tab: '#101c34' },
+  light: { panel: '#0b3a73', tab: '#0b3a73' },
+  dark: { panel: '#101c34', tab: '#101c34' },
 };
 
 // One title style for every drawer
@@ -144,7 +144,7 @@ export default function SideDrawer({
   onPlayClickSound,
   contentStyle,
   children,
-  side = 'left',
+  side = 'right', // every page opens on the right
   align = 'center',
 }: SideDrawerProps) {
   const isLeft = side === 'left';
@@ -179,8 +179,8 @@ export default function SideDrawer({
             width: DRAWER_WIDTH[device],
             zIndex: ResponsiveValues.zIndex.overlay,
             backgroundColor: panel,
-            backdropFilter: 'blur(0.75rem)',
-            WebkitBackdropFilter: 'blur(0.75rem)',
+            // No backdrop blur: the panel is near-opaque, and blurring the
+            // ever-moving 3D scene behind it costs a lot on phones
             boxShadow: `${isLeft ? '' : '-'}0.5rem 0 2rem rgba(0, 0, 0, 0.25)`,
             ...inkVars,
             color: 'var(--ui-ink)',

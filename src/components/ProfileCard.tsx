@@ -295,8 +295,6 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
             />
           )}
 
-          {/* Dark overlay for better text readability */}
-          <div className='pc-overlay' />
 
           <div className='pc-shine' />
           <div className='pc-glare' />

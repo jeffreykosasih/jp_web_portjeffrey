@@ -41,7 +41,6 @@ export default function ProfilePage({
       isDarkMode={isDarkMode}
       deviceInfo={deviceInfo}
       label='Profile'
-      side='right'
       onPlayClickSound={onPlayClickSound}
     >
       <div

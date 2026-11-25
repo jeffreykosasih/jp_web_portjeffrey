@@ -26,6 +26,10 @@ import OceanAudio from './components/OceanAudio';
 import useDeviceDetection from './hooks/useDeviceDetection';
 import { useClickSound } from './hooks/useClickSound';
 import { PROFILE } from './lib/profile';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faLightbulb, faMoon } from '@fortawesome/free-solid-svg-icons';
+import { HiSpeakerWave, HiSpeakerXMark } from 'react-icons/hi2';
+import { SiSketchfab } from 'react-icons/si';
 
 // Type definitions
 type PageName = 'home' | 'profile' | 'skillset' | 'portfolio' | 'connect';
@@ -87,16 +91,12 @@ function App(): React.JSX.Element {
   const [triggerInitialZoom, setTriggerInitialZoom] = useState<boolean>(false);
 
   // While a page drawer is open, the corner buttons gather on the free side
-  // of the screen (Profile and Projects open on the right, the others on
-  // the left). Order from the screen edge inward.
+  // of the screen (every page opens on the right). Order from the screen
+  // edge inward.
   // Follows the page being opened (set on click), so the buttons don't
   // flicker while one drawer closes and the next opens
-  const freeSide: 'left' | 'right' | null =
-    focusedPage === 'profile' || focusedPage === 'portfolio'
-      ? 'left'
-      : focusedPage === 'skillset' || focusedPage === 'connect'
-      ? 'right'
-      : null;
+  // Every page opens on the right, so the free side is always the left
+  const freeSide: 'left' | 'right' | null = focusedPage ? 'left' : null;
   const dockFor = (button: 'credits' | 'sound' | 'theme') => {
     if (!freeSide) return null;
     const order =
@@ -487,7 +487,8 @@ function App(): React.JSX.Element {
                         ? [
                             {
                               key: 'sound',
-                              label: isWaveSoundOn ? 'Sound: on' : 'Sound: off',
+                              label: isWaveSoundOn ? 'Turn sound off' : 'Turn sound on',
+                              icon: isWaveSoundOn ? <HiSpeakerWave /> : <HiSpeakerXMark />,
                               onClick: () => {
                                 toggleWaveSound();
                                 playClickSound(); // heard when turning sound on
@@ -495,7 +496,9 @@ function App(): React.JSX.Element {
                             },
                             {
                               key: 'theme',
-                              label: isDarkMode ? 'Light mode' : 'Dark mode',
+                              label: isDarkMode ? 'Switch to light mode' : 'Switch to dark mode',
+                              // same icons as the theme button on larger screens
+                              icon: <FontAwesomeIcon icon={isDarkMode ? faMoon : faLightbulb} />,
                               onClick: () => {
                                 playClickSound();
                                 toggleTheme();
@@ -504,6 +507,7 @@ function App(): React.JSX.Element {
                             {
                               key: 'credits',
                               label: 'Credits',
+                              icon: <SiSketchfab />,
                               closesMenu: true,
                               onClick: () => {
                                 playClickSound();

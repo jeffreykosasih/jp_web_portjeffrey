@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getButtonSize } from '../lib/responsiveUtils';
+import { FOOTER_BOTTOM_PX } from '../lib/buttonUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faEnvelope,
@@ -111,9 +113,24 @@ export default function PageCarousel({
   const total = arrowSize * 2 + mainWidth + gap * 2;
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
   const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
-  const left = Math.min(Math.max(anchor[0] - total / 2, 8), vw - total - 8);
-  // a little way below the dock, clear of the boat
-  const top = Math.min(Math.max(anchor[1] + (isMobile ? 70 : 110), 56), vh - (isMobile ? 130 : 120));
+  // Phones: centred, just above the row of four page buttons along the
+  // bottom (the camera sits close to the dock there, so a spot measured
+  // from the dock lands on the dock itself). Larger screens: a little way
+  // below the dock, clear of the boat.
+  const phoneRowTop =
+    FOOTER_BOTTOM_PX +
+    (deviceInfo?.orientation === 'portrait' ? 4 : 0) +
+    Math.min(52, getButtonSize(deviceInfo)) +
+    16;
+  const placement: React.CSSProperties = isMobile
+    ? {
+        left: Math.max(8, (vw - total) / 2),
+        bottom: `calc(${phoneRowTop}px + env(safe-area-inset-bottom))`,
+      }
+    : {
+        left: Math.min(Math.max(anchor[0] - total / 2, 8), vw - total - 8),
+        top: Math.min(Math.max(anchor[1] + 110, 56), vh - 120),
+      };
 
   const arrowStyle = (key: string): React.CSSProperties => ({
     width: arrowSize,
@@ -143,8 +160,7 @@ export default function PageCarousel({
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           style={{
             position: 'fixed',
-            left,
-            top,
+            ...placement,
             zIndex: 9999,
             display: 'flex',
             alignItems: 'center',

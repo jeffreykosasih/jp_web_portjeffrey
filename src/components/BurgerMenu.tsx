@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DeviceInfo } from '../lib/types';
 import { getResponsiveValue, ResponsiveValues } from '../lib/responsiveUtils';
 import { LINKS } from '../lib/profile';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileLines } from '@fortawesome/free-solid-svg-icons';
 
 // Type definitions
 type PageName = 'home' | 'profile' | 'skillset' | 'portfolio' | 'connect';
@@ -18,7 +20,14 @@ interface BurgerMenuProps {
   deviceInfo?: DeviceInfo;
   onPlayClickSound?: () => void;
   /** Extra rows under the links (phones put sound, theme and credits here) */
-  extraActions?: { key: string; label: string; onClick: () => void; closesMenu?: boolean }[];
+  extraActions?: {
+    key: string;
+    /** Read out by screen readers and shown on long-press, as the icon's name */
+    label: string;
+    icon: React.ReactNode;
+    onClick: () => void;
+    closesMenu?: boolean;
+  }[];
 }
 
 // Icon Components
@@ -431,6 +440,32 @@ export default function BurgerMenu({
     };
   };
 
+  // Phones put sound, theme and credits in the menu; then the lower items
+  // become a row of round icon buttons
+  const asButtons = extraActions.length > 0;
+  const getIconButtonStyles = (key: string): React.CSSProperties => {
+    const lit = hoveredOutbound === key;
+    const accent = isDarkMode ? '#ffd36b' : '#ffffff';
+    return {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '2.85rem',
+      height: '2.85rem',
+      flex: 'none',
+      padding: 0,
+      borderRadius: '50%',
+      border: 'none',
+      backgroundColor: lit ? accent : 'rgba(255, 255, 255, 0.12)',
+      color: lit ? (isDarkMode ? '#162542' : '#12508f') : accent,
+      fontSize: '1.15rem',
+      lineHeight: 1,
+      textDecoration: 'none',
+      cursor: 'pointer',
+      transition: 'background-color 0.15s ease, color 0.15s ease',
+    };
+  };
+
   // Menu configuration
   const menuItems = [
     { name: 'Port Jeffrey', key: 'home' as PageName },
@@ -478,7 +513,9 @@ export default function BurgerMenu({
         {(!activePage || activePage === 'home') && menuIsOpen && (
           <motion.div
             initial={{ x: '100%', opacity: 0 }}
-            animate={{ x: '30%', opacity: 1 }}
+            // The panel rests partly off screen; with the icon buttons (phones)
+            // it comes all the way in so the row has room
+            animate={{ x: asButtons ? '0%' : '30%', opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{
               type: 'spring',
@@ -531,15 +568,29 @@ export default function BurgerMenu({
                   ? { delay: menuItems.length * 0.12, duration: 0.4, ease: 'easeOut' }
                   : { duration: 0 }
               }
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                gap: deviceType === 'mobile-landscape' ? '0.125rem' : 'var(--space-xs)',
-                marginTop: deviceType === 'mobile-landscape' ? '0.25rem' : 'var(--space-sm)',
-                paddingTop: deviceType === 'mobile-landscape' ? '0.375rem' : 'var(--space-md)',
-                borderTop: '1px solid rgba(255, 255, 255, 0.25)',
-              }}
+              style={
+                asButtons
+                  ? {
+                      // Phones: Resume, sound, theme and credits as a row of
+                      // round icon buttons
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: '0.5rem',
+                      width: '100%',
+                      marginTop: deviceType === 'mobile-landscape' ? '0.25rem' : 'var(--space-sm)',
+                      paddingTop: deviceType === 'mobile-landscape' ? '0.5rem' : 'var(--space-md)',
+                      borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+                    }
+                  : {
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: deviceType === 'mobile-landscape' ? '0.125rem' : 'var(--space-xs)',
+                      marginTop: deviceType === 'mobile-landscape' ? '0.25rem' : 'var(--space-sm)',
+                      paddingTop: deviceType === 'mobile-landscape' ? '0.375rem' : 'var(--space-md)',
+                      borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+                    }
+              }
             >
               {outboundLinks.map((link) => (
                 <a
@@ -550,9 +601,11 @@ export default function BurgerMenu({
                   onClick={() => onPlayClickSound?.()}
                   onMouseEnter={() => setHoveredOutbound(link.key)}
                   onMouseLeave={() => setHoveredOutbound(null)}
-                  style={getOutboundLinkStyles(link.key)}
+                  aria-label={asButtons ? `${link.label} (opens in a new tab)` : undefined}
+                  title={asButtons ? link.label : undefined}
+                  style={asButtons ? getIconButtonStyles(link.key) : getOutboundLinkStyles(link.key)}
                 >
-                  {link.label}
+                  {asButtons ? <FontAwesomeIcon icon={faFileLines} /> : link.label}
                 </a>
               ))}
               {extraActions.map((action) => (
@@ -569,17 +622,11 @@ export default function BurgerMenu({
                   onMouseEnter={() => setHoveredOutbound(action.key)}
                   onMouseLeave={() => setHoveredOutbound(null)}
                   className='touch-target'
-                  style={{
-                    ...getOutboundLinkStyles(action.key),
-                    background: 'none',
-                    border: 'none',
-                    paddingLeft: 0,
-                    paddingRight: 0,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
+                  aria-label={action.label}
+                  title={action.label}
+                  style={getIconButtonStyles(action.key)}
                 >
-                  {action.label}
+                  {action.icon}
                 </button>
               ))}
             </motion.div>

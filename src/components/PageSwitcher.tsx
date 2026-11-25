@@ -11,7 +11,6 @@ import { DeviceInfo } from '../lib/types';
 import { getButtonSize, ColorSchemes } from '../lib/responsiveUtils';
 import {
   getDockedStyles,
-  getPhoneFooter,
   FOOTER_BOTTOM_PX,
   type ButtonDock,
 } from '../lib/buttonUtils';
@@ -156,13 +155,16 @@ export default function PageDock({
 
 // Phones: where each of the four page buttons sits in its bottom row
 const PHONE_ROW_GAP_PX = 14;
+const phoneRowSize = (deviceInfo?: DeviceInfo) => Math.min(52, getButtonSize(deviceInfo));
+const phoneRowBottom = (deviceInfo?: DeviceInfo) =>
+  FOOTER_BOTTOM_PX + (deviceInfo?.isMobile && deviceInfo?.orientation === 'portrait' ? 4 : 0);
 function getPhonePageRow(
   deviceInfo: DeviceInfo | undefined,
   slot: number,
   freeSide: 'left' | 'right' | null
 ) {
   const vw = typeof window !== 'undefined' ? window.innerWidth : 375;
-  const size = Math.min(52, getButtonSize(deviceInfo));
+  const size = phoneRowSize(deviceInfo);
   const rowWidth = 4 * size + 3 * PHONE_ROW_GAP_PX;
   const portrait = !!deviceInfo?.isMobile && deviceInfo?.orientation === 'portrait';
   // Beside a landscape drawer the row centres in the strip left free
@@ -181,7 +183,7 @@ function getPhonePageRow(
     position: 'fixed' as const,
     left: `${start + slot * (size + PHONE_ROW_GAP_PX)}px`,
     right: 'auto',
-    bottom: `calc(${FOOTER_BOTTOM_PX + (portrait ? 4 : 0)}px + env(safe-area-inset-bottom))`,
+    bottom: `calc(${phoneRowBottom(deviceInfo)}px + env(safe-area-inset-bottom))`,
     width: size,
     height: size,
     zIndex: 1510,
@@ -203,6 +205,8 @@ export function PhoneButtonBand({
 }) {
   const portraitPhone =
     !!deviceInfo?.isMobile && deviceInfo?.orientation === 'portrait';
+  const bandColor = isDarkMode ? '#0a1222' : '#082a52';
+  const bandHeight = phoneRowBottom(deviceInfo) + phoneRowSize(deviceInfo) + 30;
   return (
     <AnimatePresence>
       {freeSide && portraitPhone && (
@@ -215,14 +219,14 @@ export function PhoneButtonBand({
           transition={{ duration: 0.25, delay: 0.25 }}
           style={{
             position: 'fixed',
-            left: getPhoneFooter().drawerLeft,
-            width: getPhoneFooter().drawerWidth,
+            left: 0,
+            right: 0,
             bottom: 0,
-            height: `calc(${getPhoneFooter().size + FOOTER_BOTTOM_PX * 2}px + env(safe-area-inset-bottom))`,
+            // Tall enough for the row of page buttons (and the open page's
+            // ring), with a soft fade at the top instead of a hard line
+            height: `calc(${bandHeight}px + env(safe-area-inset-bottom))`,
             zIndex: 1505, // above the drawer, below its buttons
-            backgroundColor: isDarkMode ? '#0a1222' : '#082a52',
-            borderTop: `1px solid ${isDarkMode ? 'rgba(255, 211, 107, 0.35)' : 'rgba(255, 255, 255, 0.3)'}`,
-            boxShadow: '0 -0.5rem 1rem rgba(0, 0, 0, 0.18)',
+            background: `linear-gradient(to top, ${bandColor} 0%, ${bandColor} 72%, transparent 100%)`,
             pointerEvents: 'none',
           }}
         />
