@@ -1632,6 +1632,11 @@ const FOCUS_TARGETS: Record<string, THREE.Vector3> = {
 // Scaled to each landmark's real size, so each fills a similar share of the view
 const FOCUS_DISTANCE_SCALE: Record<string, number> = { skillset: 0.8, profile: 0.55, portfolio: 1.6 };
 
+// Phones: where the resting view looks (the dog on the dock) and how far
+// back the camera sits from it
+const PHONE_HOME_TARGET = new THREE.Vector3(LANDMARK.dog.x, LANDMARK.dog.ground + 1, LANDMARK.dog.z);
+const PHONE_HOME_DISTANCE = { portrait: 34, landscape: 22 };
+
 // Which landmark belongs to which page
 const PAGE_OBJECT: Record<string, string> = {
   connect: 'twochairs',
@@ -1710,6 +1715,10 @@ function AnimatedCamera({
     !!deviceInfo?.isMobile && deviceInfo?.orientation === 'portrait';
   // How far the camera sits from a landmark when zoomed in
   const focusDistance = isPortraitPhone ? 42 : deviceInfo?.isMobile ? 30 : 34;
+  // Phones rest on a close view of the dog on the dock instead of the
+  // whole island, which is too small to read on a phone screen
+  const isPhone = !!deviceInfo?.isMobile || !!deviceInfo?.isLandscapeMobile;
+  const phoneHomeDistance = isPortraitPhone ? PHONE_HOME_DISTANCE.portrait : PHONE_HOME_DISTANCE.landscape;
 
   // Start a little further back, then ease in once the island is revealed
   const startingPosition: [number, number, number] = [
@@ -1746,6 +1755,14 @@ function AnimatedCamera({
       pos.copy(target).addScaledVector(dir, distance);
       pos.y = Math.max(pos.y, target.y + 4);
       look.copy(target);
+    } else if (isPhone) {
+      // Same approach line as a landmark zoom, a little further back so the
+      // whole dock fits
+      const dock = PHONE_HOME_TARGET;
+      dir.copy(home).sub(dock).normalize();
+      pos.copy(dock).addScaledVector(dir, phoneHomeDistance);
+      pos.y = Math.max(pos.y, dock.y + 4);
+      look.copy(dock);
     } else {
       pos.copy(home);
       look.copy(ORIGIN);

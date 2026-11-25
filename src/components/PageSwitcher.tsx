@@ -43,7 +43,10 @@ export default function PageDock({
   isDarkMode,
   deviceInfo,
   onOpen,
+  visibleOnIsland = false,
 }: {
+  /** Phones: show the row on the island view, centred at the bottom */
+  visibleOnIsland?: boolean;
   activePage: SubPage | null;
   freeSide: 'left' | 'right' | null;
   isDarkMode: boolean;
@@ -51,7 +54,9 @@ export default function PageDock({
   onOpen: (page: SubPage) => void;
 }) {
   const [hovered, setHovered] = React.useState<SubPage | null>(null);
-  if (!freeSide) return null;
+  const isPhone = !!deviceInfo?.isMobile || !!deviceInfo?.isLandscapeMobile;
+  // Phones keep the four page buttons on screen on the island view too
+  if (!freeSide && !(isPhone && visibleOnIsland)) return null;
 
   const size = getButtonSize(deviceInfo);
   const brand = isDarkMode ? ColorSchemes.primary.dark : ColorSchemes.primary.light;
@@ -64,7 +69,7 @@ export default function PageDock({
   // Counted from the screen edge inward (or up the stack on phones), after
   // the three corner buttons. Order is chosen so the group always reads
   // Profile, Projects, Skillset, Connect from left to right / top to bottom.
-  const reversed = portraitPhone || freeSide === 'right';
+  const reversed = !!freeSide && (portraitPhone || freeSide === 'right');
   const ordered = reversed ? [...PAGES].reverse() : PAGES;
 
   return (
@@ -77,9 +82,15 @@ export default function PageDock({
           // row above the corner buttons instead of sharing it
           // Footer slot on portrait phones: reading order, Profile first
           const slot = PAGES.findIndex((p) => p.id === page.id);
-          const dock: ButtonDock = landscapePhone
-            ? { side: freeSide, index: reversed ? 3 - i : i, row: 1 }
-            : { side: freeSide, index: 3 + i, extra: GROUP_GAP_PX, slot };
+          // Phones: one row of four. Centred on the island view and in the
+          // full-screen portrait drawer; along the free side beside a
+          // landscape drawer.
+          const phoneRow = isPhone ? getPhonePageRow(deviceInfo, slot, freeSide) : null;
+          const dock: ButtonDock | null = phoneRow
+            ? null
+            : landscapePhone
+            ? { side: freeSide!, index: reversed ? 3 - i : i, row: 1 }
+            : { side: freeSide!, index: 3 + i, extra: GROUP_GAP_PX, slot };
           return (
             <motion.button
               key={page.id}
@@ -111,10 +122,10 @@ export default function PageDock({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: Math.round((portraitPhone ? 38 : size) * 0.38),
+                fontSize: Math.round((phoneRow ? phoneRow.size : portraitPhone ? 38 : size) * 0.38),
                 cursor: active ? 'default' : 'pointer',
                 transition: 'background-color 0.15s ease, color 0.15s ease',
-                ...getDockedStyles(deviceInfo, dock),
+                ...(phoneRow ? phoneRow.style : getDockedStyles(deviceInfo, dock)),
               }}
             >
               {/* A ring pulses outward when this page becomes the open one */}
@@ -141,6 +152,41 @@ export default function PageDock({
       </AnimatePresence>
     </nav>
   );
+}
+
+// Phones: where each of the four page buttons sits in its bottom row
+const PHONE_ROW_GAP_PX = 14;
+function getPhonePageRow(
+  deviceInfo: DeviceInfo | undefined,
+  slot: number,
+  freeSide: 'left' | 'right' | null
+) {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 375;
+  const size = Math.min(52, getButtonSize(deviceInfo));
+  const rowWidth = 4 * size + 3 * PHONE_ROW_GAP_PX;
+  const portrait = !!deviceInfo?.isMobile && deviceInfo?.orientation === 'portrait';
+  // Beside a landscape drawer the row centres in the strip left free
+  let areaLeft = 0;
+  let areaWidth = vw;
+  if (freeSide && !portrait) {
+    const aside = typeof document !== 'undefined' ? document.querySelector('aside[aria-label]') : null;
+    const drawerWidth = aside ? aside.getBoundingClientRect().width : vw * 0.58;
+    areaWidth = vw - drawerWidth;
+    areaLeft = freeSide === 'left' ? 0 : drawerWidth;
+  }
+  const start = areaLeft + (areaWidth - rowWidth) / 2;
+  return {
+    size,
+    style: {
+    position: 'fixed' as const,
+    left: `${start + slot * (size + PHONE_ROW_GAP_PX)}px`,
+    right: 'auto',
+    bottom: `calc(${FOOTER_BOTTOM_PX + (portrait ? 4 : 0)}px + env(safe-area-inset-bottom))`,
+    width: size,
+    height: size,
+    zIndex: 1510,
+    },
+  };
 }
 
 // Portrait phones: a band at the bottom of the open drawer for the row of

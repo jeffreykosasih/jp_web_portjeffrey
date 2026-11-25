@@ -17,6 +17,8 @@ interface BurgerMenuProps {
   shouldAnimate?: boolean;
   deviceInfo?: DeviceInfo;
   onPlayClickSound?: () => void;
+  /** Extra rows under the links (phones put sound, theme and credits here) */
+  extraActions?: { key: string; label: string; onClick: () => void; closesMenu?: boolean }[];
 }
 
 // Icon Components
@@ -101,6 +103,7 @@ export default function BurgerMenu({
   shouldAnimate = true,
   deviceInfo,
   onPlayClickSound,
+  extraActions = [],
 }: BurgerMenuProps): React.JSX.Element {
   // State management
   const [internalIsOpen, setInternalIsOpen] = useState(false);
@@ -551,6 +554,33 @@ export default function BurgerMenu({
                 >
                   {link.label}
                 </a>
+              ))}
+              {extraActions.map((action) => (
+                <button
+                  key={action.key}
+                  type='button'
+                  onClick={() => {
+                    if (action.closesMenu) {
+                      setMenuIsOpen(false);
+                      onHideThemeToggle?.(false);
+                    }
+                    action.onClick();
+                  }}
+                  onMouseEnter={() => setHoveredOutbound(action.key)}
+                  onMouseLeave={() => setHoveredOutbound(null)}
+                  className='touch-target'
+                  style={{
+                    ...getOutboundLinkStyles(action.key),
+                    background: 'none',
+                    border: 'none',
+                    paddingLeft: 0,
+                    paddingRight: 0,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  {action.label}
+                </button>
               ))}
             </motion.div>
 

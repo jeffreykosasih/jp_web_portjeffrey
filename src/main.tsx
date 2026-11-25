@@ -52,6 +52,10 @@ const getInitialWaveSound = (): boolean => {
 
 function App(): React.JSX.Element {
   const deviceInfo = useDeviceDetection();
+  // Phones (portrait and landscape) get their own layout: a close view of
+  // the dock, the four page buttons along the bottom, and sound, theme and
+  // credits moved into the burger menu. Tablets and computers are unchanged.
+  const isPhone = deviceInfo.isMobile || deviceInfo.isLandscapeMobile;
 
   const getInitialTheme = (): boolean => {
     const currentHour = new Date().getHours();
@@ -193,19 +197,6 @@ function App(): React.JSX.Element {
     setTimeout(() => {
       setIsLoading(false);
     }, 100);
-
-    // Portrait phones open on the profile: the camera flies straight to its
-    // landmark and the profile page opens once the tide has gone out.
-    // Closing it shows the whole island as usual.
-    if (deviceInfo.isMobile && deviceInfo.orientation === 'portrait') {
-      setShouldAnimatePageText(true);
-      setFocusedPage('profile');
-      if (pageOpenTimer.current) window.clearTimeout(pageOpenTimer.current);
-      pageOpenTimer.current = window.setTimeout(
-        () => setActivePage('profile'),
-        1600
-      );
-    }
   };
 
   useEffect(() => {
@@ -418,6 +409,8 @@ function App(): React.JSX.Element {
                   pointerEvents: 'none', // Allow clicks to pass through to 3D scene
                 }}
               >
+                {!isPhone && (
+                <>
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -471,6 +464,9 @@ function App(): React.JSX.Element {
                   />
                 </motion.div>
 
+                </>
+                )}
+
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -486,6 +482,37 @@ function App(): React.JSX.Element {
                     onHideThemeToggle={setIsThemeToggleHidden}
                     deviceInfo={deviceInfo}
                     onPlayClickSound={playClickSound}
+                    extraActions={
+                      isPhone
+                        ? [
+                            {
+                              key: 'sound',
+                              label: isWaveSoundOn ? 'Sound: on' : 'Sound: off',
+                              onClick: () => {
+                                toggleWaveSound();
+                                playClickSound(); // heard when turning sound on
+                              },
+                            },
+                            {
+                              key: 'theme',
+                              label: isDarkMode ? 'Light mode' : 'Dark mode',
+                              onClick: () => {
+                                playClickSound();
+                                toggleTheme();
+                              },
+                            },
+                            {
+                              key: 'credits',
+                              label: 'Credits',
+                              closesMenu: true,
+                              onClick: () => {
+                                playClickSound();
+                                setIsCreditsPopupVisible(true);
+                              },
+                            },
+                          ]
+                        : []
+                    }
                   />
                 </motion.div>
               </div>
@@ -559,6 +586,12 @@ function App(): React.JSX.Element {
                 freeSide={freeSide}
                 isDarkMode={isDarkMode}
                 deviceInfo={deviceInfo}
+                visibleOnIsland={
+                  !isBurgerMenuOpen &&
+                  !isCreditsPopupVisible &&
+                  !isLoading &&
+                  !shouldDelayHomeButtonsOnce
+                }
                 onOpen={(page) => {
                   playClickSound();
                   openPage(page);
