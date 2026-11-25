@@ -62,7 +62,7 @@ export const projects: Project[] = [
     kind: '3D portfolio · This site',
     summary:
       'An island you can explore, with every landmark labelled so the work is never hidden.',
-    image: `${IMG}/port-jeffrey.jpg`,
+    image: `${IMG}/port-jeffrey-island.jpg`,
     links: [caseStudy('port-jeffrey')],
   },
   {

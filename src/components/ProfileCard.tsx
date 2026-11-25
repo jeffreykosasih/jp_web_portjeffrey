@@ -53,7 +53,8 @@ const easeInOutCubic = (x: number): number =>
   x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 
 const ProfileCardComponent: React.FC<ProfileCardProps> = ({
-  avatarUrl = '/assets/images/profile.jpg',
+  // A new photo needs a new file name: browsers keep images they have seen
+  avatarUrl = '/assets/images/profile-twelve-apostles.jpg',
   iconUrl,
   grainUrl,
   behindGradient,
